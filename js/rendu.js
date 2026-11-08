@@ -69,7 +69,7 @@ function drawMonster(e) {
   if (e.fade <= 0) return;
   const z = e.size, x = e.x + (Math.random() - 0.5) * 8 * e.shake, sink = (1 - e.fade) * 80;
   cx.save(); cx.globalAlpha = e.fade; cx.translate(x, SEA + 8 + sink);
-  const metal = e.boss ? '#5d6670' : '#5b7680', dark = '#2c3a40';
+  const metal = e.color, dark = '#2c3a40';
   // Anneaux du corps
   for (let i = 3; i >= 0; i--) { const r = (16 - i * 2) * z; C(i % 2 ? dark : metal); cx.beginPath(); cx.arc((20 + i * 30) * z, -4 * z + Math.sin(tAmb * 2 + i) * 3, r, Math.PI, 0); cx.fill(); }
   // Cou et tête, qui se dresse avant d'attaquer
@@ -92,7 +92,7 @@ function frame() {
   if (G && !G.paused && ctx) update(dt);
   const S = H / 400, VW = W / S;
   const heat = G ? (G.heat ?? 0) : 0.3, pulse = G ? G.pulse : 0;
-  const sh = G ? G.ship : { x: 140, tx: 140, hp: LEVEL.hull, wheel: tAmb * 0.3, recoil: [0, 0], hurt: 0 };
+  const sh = G ? G.ship : { x: 140, tx: 140, hp: SHIP.hull, wheel: tAmb * 0.3, recoil: [0, 0], hurt: 0 };
   const camT = sh.x - VW * 0.36;
   if (G) { if (G.cam === null) G.cam = camT; G.cam = lerp(G.cam, camT, 0.08); }
   const cam = G ? G.cam : camT;
@@ -117,7 +117,7 @@ function frame() {
   // Boulets et projectiles
   if (G) for (const s of G.shots) {
     const k = Math.min(1, s.t / s.dur), x = lerp(s.x0, s.x1, k), y = lerp(s.y0, s.y1, k) - Math.sin(k * Math.PI) * (s.mon ? 50 : 60);
-    C(s.mon ? '#9fe0ff' : '#1d1d22'); cx.beginPath(); cx.arc(x, y, s.mon ? 8 : 5, 0, 7); cx.fill();
+    C(s.spit ? '#e0a050' : s.mon ? '#9fe0ff' : '#1d1d22'); cx.beginPath(); cx.arc(x, y, s.spit ? 6 : s.mon ? 8 : 5, 0, 7); cx.fill();
   }
   if (G) for (const p of G.puffs) { const k = p.t / 0.6; C(p.blue ? 'rgba(140,220,255,' + (1 - k) + ')' : 'rgba(255,190,110,' + (1 - k) * 0.9 + ')'); cx.beginPath(); cx.arc(p.x, p.y, (p.big ? 22 : 12) + k * 30, 0, 7); cx.fill(); }
   if (G) for (const f of G.fx) { C('rgba(140,240,140,' + (1 - f.t / 0.9) + ')'); const y = f.y - f.t * 40; cx.fillRect(f.x - 2, y - 7, 4, 14); cx.fillRect(f.x - 7, y - 2, 14, 4); }
@@ -131,7 +131,7 @@ function frame() {
   cx.restore();
   // Coque restante, dans le coin haut gauche sous la pause
   cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const f = sh.hp / LEVEL.hull, bx0 = 16, by0 = 70;
+  const f = sh.hp / SHIP.hull, bx0 = 16, by0 = 70;
   C('rgba(10,20,24,.7)'); rr(bx0, by0, 128, 14, 7); cx.fill();
   C(f > 0.5 ? '#7fd36b' : f > 0.25 ? '#f0b545' : '#e0573d'); rr(bx0 + 3, by0 + 3, 122 * f, 8, 4); cx.fill();
 }

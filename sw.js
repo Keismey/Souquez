@@ -1,6 +1,6 @@
 // Souquez ! : cache hors ligne. Renommer CACHE à chaque version pour forcer la mise à jour.
 // Règle du hub : ne supprimer QUE les caches de Souquez (même adresse que le hub et les autres jeux).
-const CACHE = 'souquez-0.7.6';
+const CACHE = 'souquez-0.8.0';
 const FILES = ['./', 'index.html', 'css/style.css', 'ks-back.js', 'ks-studio.js',
   'js/donnees.js', 'js/textes.js', 'js/sauvegarde.js', 'js/audio.js', 'js/interface.js', 'js/partie.js', 'js/ecrans.js', 'js/rendu.js', 'js/main.js',
   'koa-music.mp3', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];

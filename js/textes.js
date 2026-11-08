@@ -26,6 +26,9 @@ const STR = {
     fail: 'Hésitation…', tooFar: 'Trop loin ! Avance d’abord.',
     incoming: 'Attaque en approche : protège-toi !', blocked: 'Bloqué !', hit: 'Touché !', sunk: 'Coque à zéro : retour au port',
     won: 'Mer libérée !', wonText: 'Le fort ennemi est tombé. Ton équipage fête la victoire.', again: 'Rejouer',
+    power: 'puissance', fullPower: 'Pleine puissance !',
+    starsWhy: (time, ref) => 'Temps : ' + time + ' (3e étoile en ' + ref + ' ou moins). 2e étoile : coque à moitié ou plus.',
+    starsSunk: 'La coque a cédé pendant la traversée : pas d’étoile cette fois.',
   },
   en: {
     pitch: 'You are the captain of a battleship. Beat rhythms on the ship’s drum: your crew turns them into manoeuvres.',
@@ -51,5 +54,8 @@ const STR = {
     fail: 'Hesitation…', tooFar: 'Too far! Move closer first.',
     incoming: 'Attack incoming: protect yourself!', blocked: 'Blocked!', hit: 'Hit!', sunk: 'Hull at zero: back to port',
     won: 'Sea freed!', wonText: 'The enemy fort has fallen. Your crew celebrates.', again: 'Play again',
+    power: 'power', fullPower: 'Full power!',
+    starsWhy: (time, ref) => 'Time: ' + time + ' (3rd star at ' + ref + ' or less). 2nd star: hull at half or more.',
+    starsSunk: 'Your hull gave way during the crossing: no star this time.',
   }
 };
