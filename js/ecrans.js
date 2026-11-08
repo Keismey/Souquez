@@ -63,3 +63,25 @@ $('oFrame').onchange = (e) => { save.frame = e.target.checked; persist(); };
 $('oTick').onchange = (e) => { save.tick = e.target.checked; persist(); };
 $('oVoices').onchange = (e) => { save.voices = e.target.checked; persist(); };
 $('oLang').onchange = (e) => { save.lang = e.target.value; persist(); applyTexts(); renderSlots(); };
+
+// ---------- Outils communs du hub (ks-studio.js) ----------
+$('saveBtn').onclick = () => { persist(); KS.saveDialog({ jeu: GAME_NAME, keys: [SAVE_KEY], lang: save.lang }); };
+$('bugBtn').onclick = () => KS.bug(GAME_NAME, save.lang);
+$('supportBtn').onclick = () => KS.support();
+
+// ---------- Bouton retour du téléphone et touche Échap (ks-back.js) ----------
+// En partie : pause. Pause ou victoire : écran titre (la pause sert de confirmation). Carnet, Options : fermer.
+// Écran titre : retour au hub (jamais avec Échap).
+function onBack() {
+  const top = overlayStack[overlayStack.length - 1];
+  if (top === 'ovTitle') return 'hub';
+  if (top === 'ovOpts') { closeOverlay(); return; }
+  if (top === 'ovBook') { $('bookClose').onclick(); return; }
+  if (top === 'ovPause' || top === 'ovWin') { toTitle(); return; }
+  if (!top) $('pauseBtn').onclick();
+}
+KSBack.init({
+  back: onBack,
+  lang: () => save.lang,
+  title: () => overlayStack.length === 1 && overlayStack[0] === 'ovTitle',
+});

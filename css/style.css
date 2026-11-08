@@ -5,6 +5,7 @@
   --perfect:#ffd447; --good:#a6e57f; --miss:#a39a90;
   --display:'Grandstander','Trebuchet MS',system-ui,sans-serif;
   --body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --ks-accent:#ffd447; /* couleur de la fenêtre Sauvegarde commune (ks-studio.js) */
   color-scheme:dark;
 }
 html,body{height:100%}
