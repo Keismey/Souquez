@@ -9,6 +9,17 @@ function mix(c1, c2, k) { const a = parseInt(c1.slice(1), 16), b = parseInt(c2.s
 let tAmb = 0;
 const C = (c) => cx.fillStyle = c;
 function rr(x, y, w, h, r) { cx.beginPath(); cx.roundRect ? cx.roundRect(x, y, w, h, r) : cx.rect(x, y, w, h); }
+// Pépin dessiné en code par la DA (js/equipage.js). Hauteur en unités du monde, dans le repère du navire :
+// les ponts provisoires font 28 unités, et les mains montent à 1,1·h en panique, donc h = 24 (≈ 40 px sur 720).
+// À agrandir (charte : 60 px) quand le navire définitif aura des ponts plus hauts.
+const PEPIN_H = 24;
+function pepin(x, y, run, alarm, dir, seed) {
+  cx.save(); cx.translate(x, y);
+  const s = Math.hypot(cx.getTransform().c, cx.getTransform().d) / dpr; // unités → pixels CSS (contrat : h en pixels)
+  cx.scale(1 / s, 1 / s);
+  EQUIPAGE.draw(cx, 'pepin', 0, 0, PEPIN_H * s, alarm ? 'panique' : run ? 'course' : 'repos', tAmb, dir || 1, seed || 0);
+  cx.restore();
+}
 function mate(x, y, bob, tint, run, alarm, idx, dir) {
   // Image de la DA si elle existe : matelot en morceaux animé
   if (ART.equipage.length) { const P = ART.equipage[(idx || 0) % ART.equipage.length]; drawPuppet(P, x, y, alarm ? 'alarm' : run ? 'run' : 'idle', bob, dir || 1, (idx || 0) * 1.7); return; }
@@ -69,7 +80,7 @@ function drawShip(sh, guard, pulse, listening) {
   const active = listening && G && G.resp ? ORDER_ZONE[G.resp.cmd] : null;
   FIXED.forEach(([fx2, fy, zn], i) => mate(fx2, fy, active === zn ? pulse : 0, '#f0d9a8', false, false, i + 1));
   const crew = G ? G.crew : newCrew();
-  crew.forEach((r, i) => { const run = r.x !== r.tx || r.y !== r.ty; mate(r.x, r.y, !run && active === r.zone ? pulse : 0, null, run, r.panic > 0.9, i + 5, r.tx < r.x ? -1 : 1); });
+  crew.forEach((r, i) => { if (i === 0 && typeof EQUIPAGE !== 'undefined') { pepin(r.x, r.y, r.x !== r.tx || r.y !== r.ty, r.panic > 0.9, r.tx < r.x ? -1 : 1, 0); return; } const run = r.x !== r.tx || r.y !== r.ty; mate(r.x, r.y, !run && active === r.zone ? pulse : 0, null, run, r.panic > 0.9, i + 5, r.tx < r.x ? -1 : 1); });
   // Roue à aubes
   if (!N) {
   cx.save(); cx.translate(-6, 26); cx.rotate(sh.wheel);
