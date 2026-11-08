@@ -75,6 +75,7 @@ $('supportBtn').onclick = () => KS.support();
 function onBack() {
   const top = overlayStack[overlayStack.length - 1];
   if (top === 'ovTitle') return 'hub';
+  if (top === 'ovDlg') { skipScene(); return; }
   if (top === 'ovOpts') { closeOverlay(); return; }
   if (top === 'ovBook') { $('bookClose').onclick(); return; }
   if (top === 'ovPause' || top === 'ovWin') { toTitle(); return; }

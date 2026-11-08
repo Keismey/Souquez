@@ -9,12 +9,14 @@ const beatTime = (k) => G.start + k * SPB;
 const isPlayer = (m) => (G && G.mode === 'calib') ? (m >= 1 && m <= 3) : (m >= 1 && m % 2 === 1);
 function newGame(mode) {
   initAudio();
+  // Histoire : l'intro de la mer 1 passe avant la toute première partie (une seule fois)
+  if ((mode || 'play') === 'play' && !sceneSeen('mer1_intro')) { stopMusic(); G = null; renderSlots(); playScene('mer1_intro', () => newGame(mode)); return; }
   G = {
     mode: mode || 'play', start: ctx.currentTime + 0.8, lastSched: -1, lastVis: -1, slots: {}, evaluated: new Set(), cmds: {}, quality: {},
     combo: 0, best: 0, stats: { p: 0, g: 0, o: 0 }, power: 0, sunk: false, ship: { x: 140, tx: 140, hp: SHIP.hull, wheel: 0, recoil: [0, 0], hurt: 0 }, cam: null, calTaps: [],
     mons: LEVEL.monsters.map(m => { const T = MONSTERS[m.type]; return { ...T, ...m, max: T.hp, shake: 0, fade: 1, nextAtk: null, tele: 0, raise: 0 }; }),
     shots: [], puffs: [], fx: [], crew: newCrew(), pulse: 0, won: false, paused: false, shake: 0, totemLit: 0, curMeasure: 0, curBeat: 0, ownSlot: -1,
-    phrase: null, resp: null, gridK: 4, lastRespEnd: -99, kOwn: 0, sig: '', hintHold: -1,
+    phrase: null, failUntil: -1, resp: null, gridK: 4, lastRespEnd: -99, kOwn: 0, sig: '', hintHold: -1,
   };
   stopMusic(); if (G.mode === 'play') startMusic(0);
   hint(G.mode === 'calib' ? t('calGo') : ''); renderSlots(); updateCombo();
@@ -25,6 +27,8 @@ function updateCombo() {
   box.classList.toggle('full', n >= POWER.steps);
 }
 // Pleine puissance : +1 cran par commande réussie, −1 par raté ou rythme cassé (jamais de remise à zéro)
+// Erreur : perd POWER.penalty crans, ou tout si penalty vaut 0
+const powerLoss = () => -(POWER.penalty > 0 ? POWER.penalty : POWER.steps);
 function powerStep(d) {
   const was = G.power; G.power = clamp(G.power + d, 0, POWER.steps);
   updateCombo();
@@ -50,6 +54,7 @@ function onPad(pad, perfMs, el) {
   const ta = raw - off;
   const k = Math.round((ta - G.start) / SPB);
   if (k < 4) return;
+  if (k <= G.failUntil) return; // fin de l'ordre raté : pas de nouvelle commande (une erreur = une pénalité)
   if (inResp(k)) { hint(t('listenHint')); G.hintHold = k + 3; return; }
   // Départ libre : la première tape ouvre une commande de 4 temps sur ce temps-là
   if (!G.phrase || G.phrase.done) { G.phrase = { k0: k, S: [null, null, null, null], done: false }; G.gridK = k; }
@@ -94,7 +99,7 @@ function evaluate() {
     for (let b = 0; b < 4; b++) { const at = beatTime(ph.k0 + 4 + b); if (seq[b] && at > ctx.currentTime - 0.02) { const t2 = Math.max(at, ctx.currentTime); playPad(seq[b], t2, 0.3, 1.5); chant(seq[b], t2); } }
     if (G.combo > 0 && G.combo % 4 === 0) cheer(beatTime(ph.k0 + 8) - SPB * 0.5, false);
   } else {
-    G.combo = 0; G.lastRespEnd = -99; powerStep(-1);
+    G.combo = 0; G.lastRespEnd = -99; G.failUntil = ph.k0 + 3; powerStep(powerLoss());
     banner(t('fail'), true); groan(ctx.currentTime + 0.05);
     hint(t('failHint')); G.hintHold = ph.k0 + 8;
   }
@@ -129,7 +134,7 @@ function aliveEnemy() { return G.mons.find(e => e.hp > 0); }
 const seqTxt = (id) => t('cmd' + id) + ' : ' + COMMANDS[id].seq.join(' ');
 function commandHint() {
   const foe = aliveEnemy();
-  if (foe && foe.tele) return seqTxt('DEF');
+  if (G.mons.some(e => e.hp > 0 && e.tele && e.dmg >= WARN_DMG)) return seqTxt('DEF');
   if (G.ship.hp <= SHIP.hull * 0.4) return seqTxt('HEAL');
   return foe && foe.x - G.ship.x <= RANGE ? seqTxt('ATK') : seqTxt('ADV');
 }
@@ -159,16 +164,19 @@ function onBeatVisual(k) {
   else { txt = t('yourTurn'); go = true; if (!ph$ && k >= G.hintHold) hint(commandHint()); }
   // Combo perdu si la commande suivante ne démarre pas juste après la réponse
   if (G.combo > 0 && G.lastRespEnd > 0 && k === G.lastRespEnd + 1 && !(G.phrase && G.phrase.k0 >= G.lastRespEnd)) {
-    G.combo = 0; G.lastRespEnd = -99; powerStep(-1); hint(t('chainLost')); G.hintHold = k + 4;
+    G.combo = 0; G.lastRespEnd = -99; powerStep(powerLoss()); hint(t('chainLost')); G.hintHold = k + 4;
   }
   ph.textContent = txt; ph.classList.toggle('go', go);
   renderSlots(); { const v = slotView(); if (v.cur >= 0) flashSlot(v.cur); }
   if (save.frame) { const f = $('beatFrame'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
+  // Histoire : premier monstre à portée de canon, entre deux ordres → scène avant le premier Attaquer
+  { const foe = aliveEnemy();
+    if (!sceneSeen('mer1_attaque') && foe && foe.x - G.ship.x <= RANGE && !inResp(k) && !(G.phrase && !G.phrase.done)) { pause(); playScene('mer1_attaque', resume); return; } }
   // Monstres : une attaque tous les « every » temps quand le navire est à portée, annoncée TELE temps avant, puis tombe sur le temps
   for (const e of G.mons) {
     if (e.hp <= 0 || e.x - G.ship.x > e.reach) continue;
     if (e.nextAtk == null) e.nextAtk = k + FIRST;
-    if (k === e.nextAtk - TELE) { e.tele = 1; hint(t('incoming')); G.hintHold = k + 2; }
+    if (k === e.nextAtk - TELE) { e.tele = 1; if (e.dmg >= WARN_DMG) { hint(t('incoming')); G.hintHold = k + 2; } }
     if (k === e.nextAtk) {
       e.tele = 0; e.nextAtk = k + e.every;
       G.shots.push({ mon: true, spit: !!e.spitter, x0: e.x - 34 * e.size, y0: SEA - 70 * e.size, x1: G.ship.x + 70, y1: SEA - 40, t: 0, dur: e.shotDur, dmg: e.dmg });
@@ -248,7 +256,7 @@ function winGame() {
   [1, 1.25, 1.5, 2].forEach((p, i) => playPad('DING', at + i * 0.15, 0.8, p));
   cheer(at + 0.2, true); cheer(at + 1.1, true); stopMusic(true);
   $('sP').textContent = G.stats.p; $('sG').textContent = G.stats.g; $('sM').textContent = G.stats.o; $('sC').textContent = G.best;
-  setTimeout(() => openOverlay('ovWin'), 900);
+  setTimeout(() => playScene('mer1_plaque', () => openOverlay('ovWin')), 900);
 }
 
 const lerp = (a, b, k) => a + (b - a) * k;
