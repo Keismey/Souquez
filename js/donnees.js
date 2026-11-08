@@ -1,6 +1,6 @@
 // Souquez ! : données de jeu (aucune logique ici). Les scripts partagent la portée globale, chargés dans l'ordre de index.html.
 'use strict';
-const VERSION = '0.10.0';
+const VERSION = '0.10.1';
 const GAME_NAME = 'Souquez !';
 const SAVE_KEY = 'koa.save';
 
@@ -33,11 +33,20 @@ const SHIP = {
   heal: 1.5,         // Soigner : 2 fois par cycle (+3 par cycle)
 };
 // Pleine puissance : 4 crans, +1 par commande réussie. Une erreur (fausse note, note oubliée, rythme cassé)
-// coûte « penalty » crans : 2 par défaut (option A), 0 = retour à zéro (option B).
-// Essai en cours (8 nov.) : ?penalite=0 dans l'adresse pour tester l'option B. À retirer une fois tranché.
+// coûte « penalty » crans. Décision du 8 nov. : option A (−2) par défaut ; option B (0 = retour à zéro)
+// réservée plus tard à un mode difficile ou aux dernières mers (le Game design dira où).
+// Ordre de priorité : ?penalite=N dans l'adresse (tests) > penalty de la mission (LEVEL) > mode (MODES) > POWER.penalty.
 // advMult : en pleine puissance, Avancer va 1,5 fois plus loin (essai du 8 nov.).
 const POWER = { steps: 4, mult: 1.5, advMult: 1.5, penalty: 2 };
-try { if (new URLSearchParams(location.search).get('penalite') === '0') POWER.penalty = 0; } catch (_) {}
+const MODES = { normal: { penalty: 2 }, difficile: { penalty: 0 } };
+let MODE = 'normal'; // pas encore de choix de mode dans le jeu
+let PENALTY_URL = null;
+try { const q = new URLSearchParams(location.search).get('penalite'); if (q !== null && /^\d+$/.test(q)) PENALTY_URL = +q; } catch (_) {}
+function penaltyNow() {
+  if (PENALTY_URL !== null) return PENALTY_URL;
+  if (LEVEL.penalty != null) return LEVEL.penalty;
+  const m = MODES[MODE]; return m && m.penalty != null ? m.penalty : POWER.penalty;
+}
 // Conseil « protège-toi » : seulement avant un coup d'au moins WARN_DMG dégâts (le Cogneur).
 const WARN_DMG = 3;
 // Monstres : attaque annoncée 6 temps avant (TELE), première attaque FIRST temps après être à portée.
@@ -50,6 +59,7 @@ const MONSTERS = {
 // Mission V1 : port à 3 000 unités, 5 rencontres dans l'ordre.
 const LEVEL = {
   portX: 3000,
+  penalty: null, // null = suit le mode ; 0 à 4 pour imposer une pénalité à cette mission
   monsters: [
     { type: 'sardine', x: 800 },
     { type: 'crache', x: 1350 }, { type: 'crache', x: 1440 },

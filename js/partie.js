@@ -27,8 +27,8 @@ function updateCombo() {
   box.classList.toggle('full', n >= POWER.steps);
 }
 // Pleine puissance : +1 cran par commande réussie, −1 par raté ou rythme cassé (jamais de remise à zéro)
-// Erreur : perd POWER.penalty crans, ou tout si penalty vaut 0
-const powerLoss = () => -(POWER.penalty > 0 ? POWER.penalty : POWER.steps);
+// Erreur : perd penaltyNow() crans, ou tout si elle vaut 0 (voir donnees.js)
+const powerLoss = () => { const p = penaltyNow(); return -(p > 0 ? p : POWER.steps); };
 function powerStep(d) {
   const was = G.power; G.power = clamp(G.power + d, 0, POWER.steps);
   updateCombo();
