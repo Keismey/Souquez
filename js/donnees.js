@@ -1,6 +1,6 @@
 // Souquez ! : données de jeu (aucune logique ici). Les scripts partagent la portée globale, chargés dans l'ordre de index.html.
 'use strict';
-const VERSION = '0.8.3';
+const VERSION = '0.8.4';
 const GAME_NAME = 'Souquez !';
 const SAVE_KEY = 'koa.save';
 
@@ -32,8 +32,13 @@ const SHIP = {
   guard: 0.25,       // Protéger : dégâts reçus × 0,25
   heal: 1.5,         // Soigner : 2 fois par cycle (+3 par cycle)
 };
-// Pleine puissance : 4 crans, +1 par commande réussie, −1 par commande ratée ou rythme cassé.
-const POWER = { steps: 4, mult: 1.5 };
+// Pleine puissance : 4 crans, +1 par commande réussie. Une erreur (fausse note, note oubliée, rythme cassé)
+// coûte « penalty » crans : 2 par défaut (option A), 0 = retour à zéro (option B).
+// Essai en cours (8 nov.) : ?penalite=0 dans l'adresse pour tester l'option B. À retirer une fois tranché.
+const POWER = { steps: 4, mult: 1.5, penalty: 2 };
+try { if (new URLSearchParams(location.search).get('penalite') === '0') POWER.penalty = 0; } catch (_) {}
+// Conseil « protège-toi » : seulement avant un coup d'au moins WARN_DMG dégâts (le Cogneur).
+const WARN_DMG = 3;
 // Monstres : attaque annoncée 6 temps avant (TELE), première attaque FIRST temps après être à portée.
 const TELE = 6, FIRST = 10;
 const MONSTERS = {
