@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<base href="../">
+<title>Prototype boss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- Prototype hors du jeu : combat contre Tonton Homard. La page reprend le jeu tel quel (index.html et js/),
+     avec 3 retouches faites ici en mémoire, sans toucher aux fichiers du jeu : tempo 106 BPM, dézoom possible du rendu,
+     et la logique du boss (outils/proto/boss.js). La sauvegarde du jeu n'est pas modifiée. -->
+<script>
+'use strict';
+(async () => {
+  const get = async (u) => { const r = await fetch(u, { cache: 'no-cache' }); return r.text(); };
+  // Corps de la page du jeu (sans ses scripts)
+  const html = await get('index.html');
+  document.body.insertAdjacentHTML('afterbegin', html.slice(html.indexOf('<body>') + 6, html.indexOf('<' + '!-- Fichiers communs')));
+  const PATCH = {
+    'js/donnees.js': [[/const BPM = 102,/, 'const BPM = 106,']],
+    'js/rendu.js': [
+      [/const S = H \/ 400, VW = W \/ S;/, 'const S = H / 400 * (window.ZOOM || 1), VW = W / S;'],
+      [/cx\.setTransform\(dpr \* S, 0, 0, dpr \* S, 0, 0\);/, 'cx.setTransform(dpr * S, 0, 0, dpr * S, 0, dpr * (H - 400 * S));'],
+      [/C\(sky\); cx\.fillRect\(0, 0, VW, 400\);/, 'C(sky); cx.fillRect(0, -400, VW, 800);'],
+    ],
+  };
+  const scripts = [...html.matchAll(new RegExp('<' + 'script src="([^"]+)"><' + '/script>', 'g'))].map((m) => m[1]).concat(['outils/proto/boss.js']);
+  for (const src of scripts) {
+    const s = document.createElement('script');
+    if (PATCH[src]) {
+      let code = await get(src);
+      for (const [a, b] of PATCH[src]) { if (!a.test(code)) console.warn('Retouche introuvable dans ' + src + ' : ' + a); code = code.replace(a, b); }
+      s.textContent = code;
+      document.body.appendChild(s);
+    } else await new Promise((ok) => { s.src = src; s.onload = ok; s.onerror = ok; document.body.appendChild(s); });
+  }
+})().catch((e) => { console.error('Prototype : ' + e.message); document.body.insertAdjacentText('afterbegin', 'Erreur de chargement : ' + e.message); });
+</script>
+</body>
+</html>
