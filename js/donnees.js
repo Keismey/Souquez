@@ -62,8 +62,8 @@ const MONSTERS = {
   homard:   { hp: 40, dmg: 6, every: 24, reach: -1e9, size: 1.5, color: '#b5452f', shotDur: 0.5, boss: true },
 };
 // Tonton Homard (GDD « Mer 1 en détail ») : pince 6 dégâts tous les 24 temps, annoncée 10 temps avant, 1er coup au temps 28 ;
-// phase 2 (≤ 25 PV) : 2 Sardines appelées une fois + jet de vapeur 1 dégât tous les 12 temps ; phase 3 (≤ 12 PV) : double pince 2 × 5, 4 temps d'écart.
-const BOSS = { tele: 10, every: 24, pince: 6, double: 5, ecart: 4, jet: 1, jetEvery: 12, premier: 28, zoom: 0.84, phase2: 25, phase3: 12 };
+// phase 2 (≤ 25 PV) : 2 Sardines appelées une fois + jet de vapeur 1 dégât tous les 12 temps ; phase 3 (≤ 12 PV) : double pince 2 × 5, 2 temps d’écart.
+const BOSS = { tele: 10, every: 24, pince: 6, double: 5, ecart: 2, jet: 1, jetEvery: 12, premier: 28, zoom: 0.84, phase2: 25, phase3: 12 };
 // Mission en cours : remplie par chargerMission() (js/mer.js) depuis MERS. Valeurs par défaut = mission V1 (« Cap au large »).
 const LEVEL = {
   portX: 3000,

@@ -1,7 +1,7 @@
 // Souquez ! : combat contre Tonton Homard (Léviathan de la mer 1). Réglages dans BOSS (js/donnees.js).
 // Phase 1 (40 → 25) : pince-marteau, 6 dégâts tous les 24 temps, annoncée 10 temps avant ; 1er coup au temps 28.
 // Phase 2 (25 → 12) : la pince continue ; 2 Sardines-à-Vapeur appelées une fois, à ~280 devant le navire ; jet de vapeur non annoncé.
-// Phase 3 (12 → 0)  : double pince, 2 coups de 5 à 4 temps d'écart (un seul Protéger bien placé couvre les deux).
+// Phase 3 (12 → 0)  : double pince, 2 coups de 5 à 2 temps d’écart (un seul Protéger bien placé couvre les deux).
 // Coque cédée : le combat se relance tout de suite.
 'use strict';
 let ZOOM = 1, B = null;
