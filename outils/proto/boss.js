@@ -29,7 +29,7 @@ function pince(h, dmg) {
   playPad('BOUM', ctx.currentTime, 0.7, 0.5); h.shake = 0.6;
 }
 function bossBeat(k) {
-  if (!G || G.mode !== 'play' || G.won || k < G.playFrom) return;
+  if (!G || G.mode !== 'play' || G.won) return; // tourne aussi pendant le décompte de reprise (comme les autres monstres)
   const h = homard(); if (!h || h.hp <= 0) return;
   B.phase = h.hp > 25 ? 1 : h.hp > 12 ? 2 : 3;
   // Phase 2 : appelle 2 Sardines-à-Vapeur devant lui (une seule fois) ; placées en tête de liste, elles prennent les tirs
@@ -42,9 +42,9 @@ function bossBeat(k) {
   }
   // Pince (et double pince en phase 3), annoncée 10 temps avant
   if (B.next == null) B.next = Math.max(BOSS.premier, k + BOSS.tele); // 1er coup au temps 28 (annoncé au 18), le joueur s'installe
-  if (k === B.next - BOSS.tele) { h.tele = 1; B.dbl = B.phase === 3; crewPanic(); hint(t('incoming')); G.hintHold = k + 3; }
-  if (k === B.next) { pince(h, B.dbl ? BOSS.double : BOSS.pince); if (B.dbl) B.second = k + BOSS.ecart; else h.tele = 0; B.next = k + BOSS.every; }
-  if (k === B.second) { pince(h, BOSS.double); B.second = null; h.tele = 0; }
+  if (!h.tele && B.second == null && k >= B.next - BOSS.tele && k < B.next) { h.tele = 1; B.dbl = B.phase === 3; crewPanic(); hint(t('incoming')); G.hintHold = k + 3; }
+  if (k >= B.next) { pince(h, B.dbl ? BOSS.double : BOSS.pince); if (B.dbl) B.second = k + BOSS.ecart; else h.tele = 0; B.next = k + BOSS.every; }
+  if (B.second != null && k >= B.second) { pince(h, BOSS.double); B.second = null; h.tele = 0; }
   // Jet de vapeur, non annoncé (phase 2)
   if (B.phase === 2 && B.jet != null && k >= B.jet) {
     G.shots.push({ mon: true, spit: true, x0: h.x - 40 * h.size, y0: SEA - 60 * h.size, x1: G.ship.x + 60, y1: SEA - 30, t: 0, dur: 0.5, dmg: BOSS.jet });
