@@ -26,7 +26,7 @@ const STR = {
     fail: 'Hésitation…', tooFar: 'Trop loin ! Avance d’abord.',
     incoming: 'Attaque en approche : protège-toi !', blocked: 'Bloqué !', hit: 'Touché !', sunk: 'Coque à zéro : retour au port',
     won: 'À bon port !', wonText: 'Même Pépin n’a plus peur. Ton équipage trinque à ta santé !', again: 'Rejouer',
-    power: 'puissance', fullPower: 'Pleine puissance !',
+    power: 'puissance', fullPower: 'Pleine puissance !', skip: 'Passer', tapNext: 'Touche ou Entrée pour continuer',
     starPort: 'Port atteint', starHull: (hull, min) => 'Coque ' + hull + ' (' + min + ' min.)', starTime: (time, ref) => 'Temps ' + time + ' (' + ref + ' max.)',
     starsSunk: 'La coque a cédé pendant la traversée : pas d’étoile cette fois.',
   },
@@ -54,7 +54,7 @@ const STR = {
     fail: 'Hesitation…', tooFar: 'Too far! Move closer first.',
     incoming: 'Attack incoming: protect yourself!', blocked: 'Blocked!', hit: 'Hit!', sunk: 'Hull at zero: back to port',
     won: 'Safe in port!', wonText: 'Even Pip isn’t scared anymore. Your crew drinks to your health!', again: 'Play again',
-    power: 'power', fullPower: 'Full power!',
+    power: 'power', fullPower: 'Full power!', skip: 'Skip', tapNext: 'Tap or press Enter to continue',
     starPort: 'Port reached', starHull: (hull, min) => 'Hull ' + hull + ' (' + min + ' min.)', starTime: (time, ref) => 'Time ' + time + ' (' + ref + ' max.)',
     starsSunk: 'Your hull gave way during the crossing: no star this time.',
   }

@@ -9,6 +9,8 @@ const beatTime = (k) => G.start + k * SPB;
 const isPlayer = (m) => (G && G.mode === 'calib') ? (m >= 1 && m <= 3) : (m >= 1 && m % 2 === 1);
 function newGame(mode) {
   initAudio();
+  // Histoire : l'intro de la mer 1 passe avant la toute première partie (une seule fois)
+  if ((mode || 'play') === 'play' && !sceneSeen('mer1_intro')) { stopMusic(); G = null; renderSlots(); playScene('mer1_intro', () => newGame(mode)); return; }
   G = {
     mode: mode || 'play', start: ctx.currentTime + 0.8, lastSched: -1, lastVis: -1, slots: {}, evaluated: new Set(), cmds: {}, quality: {},
     combo: 0, best: 0, stats: { p: 0, g: 0, o: 0 }, power: 0, sunk: false, ship: { x: 140, tx: 140, hp: SHIP.hull, wheel: 0, recoil: [0, 0], hurt: 0 }, cam: null, calTaps: [],
@@ -167,6 +169,9 @@ function onBeatVisual(k) {
   ph.textContent = txt; ph.classList.toggle('go', go);
   renderSlots(); { const v = slotView(); if (v.cur >= 0) flashSlot(v.cur); }
   if (save.frame) { const f = $('beatFrame'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
+  // Histoire : premier monstre à portée de canon, entre deux ordres → scène avant le premier Attaquer
+  { const foe = aliveEnemy();
+    if (!sceneSeen('mer1_attaque') && foe && foe.x - G.ship.x <= RANGE && !inResp(k) && !(G.phrase && !G.phrase.done)) { pause(); playScene('mer1_attaque', resume); return; } }
   // Monstres : une attaque tous les « every » temps quand le navire est à portée, annoncée TELE temps avant, puis tombe sur le temps
   for (const e of G.mons) {
     if (e.hp <= 0 || e.x - G.ship.x > e.reach) continue;
@@ -251,7 +256,7 @@ function winGame() {
   [1, 1.25, 1.5, 2].forEach((p, i) => playPad('DING', at + i * 0.15, 0.8, p));
   cheer(at + 0.2, true); cheer(at + 1.1, true); stopMusic(true);
   $('sP').textContent = G.stats.p; $('sG').textContent = G.stats.g; $('sM').textContent = G.stats.o; $('sC').textContent = G.best;
-  setTimeout(() => openOverlay('ovWin'), 900);
+  setTimeout(() => playScene('mer1_plaque', () => openOverlay('ovWin')), 900);
 }
 
 const lerp = (a, b, k) => a + (b - a) * k;
