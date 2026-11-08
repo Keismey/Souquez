@@ -22,11 +22,12 @@
   const html = await get('index.html');
   document.body.insertAdjacentHTML('afterbegin', html.slice(html.indexOf('<body>') + 6, html.indexOf('<' + '!-- Fichiers communs')));
   const PATCH = {
+    'js/partie.js': [[/COMMANDS\.DEF\.seq/, '(COMMANDS.DEF || { seq: [] }).seq']], // ordre Protéger pas encore appris
     'js/rendu.js': [
       [/C\(lit \? mix\('#4a4a52', '#ffd447', lit\) : '#4a4a52'\);[^\n]*\n[^\n]*cx\.fillRect\(fx - 30 \+ i \* 24[^\n]*\n/, 'if (window.drawGoal) drawGoal(fx, lit);\n'],
     ],
   };
-  const scripts = [...html.matchAll(new RegExp('<' + 'script src="([^"]+)"><' + '/script>', 'g'))].map((m) => m[1]).concat(['outils/proto/mers.js', 'outils/proto/missions.js']);
+  const scripts = [...html.matchAll(new RegExp('<' + 'script src="([^"]+)"><' + '/script>', 'g'))].map((m) => m[1]).concat(['outils/proto/mers.js', 'outils/proto/missions.js', 'outils/proto/boucle.js']);
   for (const src of scripts) {
     const s = document.createElement('script');
     if (PATCH[src]) {

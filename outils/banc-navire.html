@@ -38,8 +38,8 @@ let N = null, zones = true, crew = true, pan = false;
 for (const [id, set] of [['zones', () => zones = !zones], ['crew', () => crew = !crew], ['pan', () => pan = !pan]]) $(id).onclick = () => { set(); $(id).classList.toggle('on'); };
 // Qui se tient à chaque poste (postes proposés par la DA, 8 nov.) : Hortense en haut, Pépin et les matelots aux canons, Gaston et Doc aux machines
 const EQUIPE = { pont: ['hortense'], canons: ['pepin', 'matelot', 'matelot'], machines: ['gaston', 'bouillon'] };
-// Hauteur à l'écran 1280×720 (px) : tailles de la charte réduites d'environ 25 % (directeur, 8 nov.), Hortense à 64 px
-const TAILLE = { pepin: 35, matelot: 52, hortense: 64, gaston: 55, bouillon: 58 };
+// Hauteur à l'écran 1280×720 (px) : tailles de la charte réduites d'environ 25 % (directeur, 8 nov.), Hortense à 64 px, matelots à 48 px pour garder les mains sous la poutre des canons en panique
+const TAILLE = { pepin: 35, matelot: 48, hortense: 64, gaston: 55, bouillon: 58 };
 const X0 = 234, Y0 = 300; // place du navire à l'écran (coin de l'image brute)
 
 function frame(ts) {

@@ -1,8 +1,8 @@
 // Souquez ! : prototype des missions 2 à 4 de la mer 1 (phare, épave, port), formes simples pour le but.
 // Chargé par outils/missions.html après les scripts du jeu et outils/proto/mers.js. Mission choisie par ?m=m2, m3 ou m4 (m1 aussi).
 // Données reprises de MERS (mers.js) : portX, rencontres [type, x], temps de référence, butin, ordre appris, but.
-// Le reste est le jeu tel quel (102 BPM, coque 20, pénalité du mode). Tous les ordres restent jouables : l'« ordre appris »
-// est seulement annoncé en fin de mission, le verrouillage viendra avec la carte. Rien n'est enregistré.
+// Le reste est le jeu tel quel (102 BPM, coque 20, pénalité du mode). Ordres appris, écran de fin et progression : outils/proto/boucle.js.
+// La sauvegarde du jeu (koa.save) n'est jamais touchée.
 'use strict';
 const MISSIONS = MERS[0].missions.filter((m) => !m.boss);
 const MISSION = (() => { const q = new URLSearchParams(location.search).get('m'); return MISSIONS.find((m) => m.id === q) || MISSIONS[1]; })();
@@ -25,7 +25,7 @@ save.seen = Object.assign({}, save.seen, { mer1_intro: true, mer1_attaque: true,
 (function titre() {
   const L = MLANG(), h = document.querySelector('#ovTitle h1'), p = document.querySelector('#ovTitle p');
   h.textContent = MISSION.nom[L];
-  p.textContent = (L === 'en' ? 'Mission prototype: reach ' : 'Prototype de mission : atteindre ') + BUT_NOM[MISSION.but][L] + (L === 'en' ? '. Nothing is saved.' : '. Rien n’est enregistré.');
+  p.textContent = (L === 'en' ? 'Mission prototype: reach ' : 'Prototype de mission : atteindre ') + BUT_NOM[MISSION.but][L] + '.';
   const sel = document.createElement('select');
   sel.setAttribute('aria-label', L === 'en' ? 'Mission' : 'Mission');
   sel.style.cssText = 'margin-top:10px;font:inherit;font-size:15px;padding:6px 8px;border-radius:8px;max-width:100%';
@@ -33,18 +33,6 @@ save.seen = Object.assign({}, save.seen, { mer1_intro: true, mer1_attaque: true,
   sel.onchange = () => { location.search = '?m=' + sel.value; };
   p.after(sel);
 })();
-
-// Fin de mission : butin de base et ordre appris, sous le détail des étoiles
-const _winGame = winGame;
-winGame = function () {
-  _winGame.apply(this, arguments);
-  const L = MLANG(), extra = [];
-  if (!G.sunk) {
-    extra.push((L === 'en' ? 'Base loot: ' : 'Butin de base : ') + MISSION.butin + (L === 'en' ? ' (scaled by stars)' : ' (selon les étoiles)'));
-    for (const o of MISSION.ordre) extra.push((L === 'en' ? 'New order learnt: ' : 'Nouvel ordre appris : ') + t(ORDRE_NOM[o]));
-  }
-  $('starsWhy').insertAdjacentHTML('beforeend', extra.map((s) => '<span class="ok"><b>⚓</b>' + s + '</span>').join(''));
-};
 
 // But au bout de la mer, dessiné à la place du fort (formes simples en attendant la DA). lit : 0..1, s'allume à l'arrivée.
 function drawGoal(fx, lit) {

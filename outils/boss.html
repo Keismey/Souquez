@@ -22,6 +22,7 @@
   const html = await get('index.html');
   document.body.insertAdjacentHTML('afterbegin', html.slice(html.indexOf('<body>') + 6, html.indexOf('<' + '!-- Fichiers communs')));
   const PATCH = {
+    'js/partie.js': [[/COMMANDS\.DEF\.seq/, '(COMMANDS.DEF || { seq: [] }).seq']], // ordre Protéger pas encore appris
     'js/donnees.js': [[/const BPM = 102,/, 'const BPM = 106,']],
     'js/rendu.js': [
       [/const S = H \/ 400, VW = W \/ S;/, 'const S = H / 400 * (window.ZOOM || 1), VW = W / S;'],
@@ -29,7 +30,7 @@
       [/C\(sky\); cx\.fillRect\(0, 0, VW, 400\);/, 'C(sky); cx.fillRect(0, -400, VW, 800);'],
     ],
   };
-  const scripts = [...html.matchAll(new RegExp('<' + 'script src="([^"]+)"><' + '/script>', 'g'))].map((m) => m[1]).concat(['outils/proto/boss.js']);
+  const scripts = [...html.matchAll(new RegExp('<' + 'script src="([^"]+)"><' + '/script>', 'g'))].map((m) => m[1]).concat(['outils/proto/mers.js', 'outils/proto/boss.js', 'outils/proto/boucle.js']);
   for (const src of scripts) {
     const s = document.createElement('script');
     if (PATCH[src]) {

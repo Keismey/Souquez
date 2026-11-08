@@ -71,15 +71,16 @@ html, body { margin: 0; height: 100%; background: var(--marine); color: var(--cr
 'use strict';
 const $ = (id) => document.getElementById(id);
 const TXT = {
-  fr: { retour: '← Mers', fermer: 'Fermer', jouer: 'Larguer les amarres', objectif: 'Objectif', port: (x, b) => 'Atteindre ' + { bouee: 'la bouée', phare: 'le phare', epave: 'l’épave', port: 'le port' }[b || 'bouee'] + ' à ' + x.toLocaleString('fr-FR'), piece: ' + une pièce de navire rare la première fois', boss: 'Vaincre ', ordre: 'Ordre appris', aucun: '—', ref: 'Temps de référence', best: 'Meilleur temps', coque: 'Meilleure coque', butin: 'Butin de base', jamais: 'pas encore joué', tempo: 'Tempo', ferme: 'Mission verrouillée', joue: (n) => 'Mission lancée : ' + n + ' (prototype, pas de partie ici)',
+  fr: { retour: '← Mers', fermer: 'Fermer', jouer: 'Larguer les amarres', objectif: 'Objectif', port: (x, b) => 'Atteindre ' + { bouee: 'la bouée', phare: 'le phare', epave: 'l’épave', port: 'le port' }[b || 'bouee'] + ' à ' + x.toLocaleString('fr-FR'), piece: ' + une pièce de navire rare la première fois', boss: 'Vaincre ', ordre: 'Ordre appris', aucun: '—', ref: 'Temps de référence', best: 'Meilleur temps', coque: 'Meilleure coque', butin: 'Butin de base', jamais: 'pas encore joué', tempo: 'Tempo', ferme: 'Mission verrouillée', piece2: 'Pièce rare trouvée', butinTot: 'Butin',
     ADV: 'Avancer', ATK: 'Attaquer', DEF: 'Protéger', HEAL: 'Soigner' },
-  en: { retour: '← Seas', fermer: 'Close', jouer: 'Cast off', objectif: 'Goal', port: (x, b) => 'Reach the ' + { bouee: 'buoy', phare: 'lighthouse', epave: 'wreck', port: 'harbour' }[b || 'bouee'] + ' at ' + x.toLocaleString('en-GB'), piece: ' + a rare ship part the first time', boss: 'Defeat ', ordre: 'New order', aucun: '—', ref: 'Target time', best: 'Best time', coque: 'Best hull', butin: 'Base loot', jamais: 'not played yet', tempo: 'Tempo', ferme: 'Locked mission', joue: (n) => 'Mission started: ' + n + ' (prototype, no game here)',
+  en: { retour: '← Seas', fermer: 'Close', jouer: 'Cast off', objectif: 'Goal', port: (x, b) => 'Reach the ' + { bouee: 'buoy', phare: 'lighthouse', epave: 'wreck', port: 'harbour' }[b || 'bouee'] + ' at ' + x.toLocaleString('en-GB'), piece: ' + a rare ship part the first time', boss: 'Defeat ', ordre: 'New order', aucun: '—', ref: 'Target time', best: 'Best time', coque: 'Best hull', butin: 'Base loot', jamais: 'not played yet', tempo: 'Tempo', ferme: 'Locked mission', piece2: 'Rare part found', butinTot: 'Loot',
     ADV: 'Advance', ATK: 'Attack', DEF: 'Protect', HEAL: 'Heal' },
 };
-let lang = 'fr';
+let lang = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'fr';
 const t = (k) => TXT[lang][k];
 const MER = MERS[0];
-// Sauvegarde du prototype (clé séparée du jeu) : progres[id] = { etoiles, temps, coque }
+// Sauvegarde du prototype (clé séparée du jeu, koa.save n'est jamais touché) : progres[id] = { etoiles, temps, coque },
+// progres._butin = butin total, progres._piece = pièce rare du boss trouvée. Écrite par outils/proto/boucle.js en fin de mission.
 let progres = {};
 try { progres = JSON.parse(localStorage.getItem('souquez.proto.carte')) || {}; } catch (_) {}
 const garde = () => { try { localStorage.setItem('souquez.proto.carte', JSON.stringify(progres)); } catch (_) {} };
@@ -98,7 +99,8 @@ function rendu() {
   $('lang').textContent = lang === 'fr' ? 'EN' : 'FR';
   $('titre').textContent = MER.nom[lang];
   const tot = MER.missions.reduce((a, m) => a + (progres[m.id]?.etoiles || 0), 0);
-  $('total').innerHTML = ETOILE(true) + ' ' + tot + ' / ' + MER.missions.length * 3;
+  $('total').innerHTML = ETOILE(true) + ' ' + tot + ' / ' + MER.missions.length * 3 + ' · ' + (progres._butin || 0) + ' ⚙' + (progres._piece ? ' · ' + t('piece2') : '');
+  $('total').setAttribute('aria-label', tot + ' / ' + MER.missions.length * 3 + ' ★, ' + t('butinTot') + ' ' + (progres._butin || 0) + (progres._piece ? ', ' + t('piece2') : ''));
   // Route en pointillés entre les bouées
   const pts = MER.missions.map((m) => m.carte);
   $('route').innerHTML = '<path d="M' + pts.map((p) => p.join(' ')).join(' L') + '" fill="none" stroke="#F2E6CC" stroke-width="0.9" stroke-dasharray="2 1.6" vector-effect="non-scaling-stroke" style="stroke-width:5px"/>';
@@ -130,7 +132,7 @@ function fiche(m, i) {
     [t('ref'), temps(m.ref)], [t('best'), temps(p.temps)], [t('coque'), p.coque == null ? t('jamais') : p.coque + ' / 20'], [t('butin'), m.butin + ' ⚙' + (m.piece ? t('piece') : '')],
   ];
   $('fInfo').innerHTML = rows.map(([k, v]) => '<dt>' + k + '</dt><dd>' + v + '</dd>').join('');
-  $('fJouer').onclick = () => { fermer(); $('total').title = t('joue')(m.nom[lang]); console.log(t('joue')(m.nom[lang])); };
+  $('fJouer').onclick = () => { location.href = (m.boss ? 'boss.html?' : 'missions.html?m=' + m.id + '&') + 'lang=' + lang; };
   $('fiche').hidden = false; $('fJouer').focus();
 }
 function fermer() { $('fiche').hidden = true; if (dernier) dernier.focus(); }
@@ -149,8 +151,10 @@ $('lang').onclick = () => { lang = lang === 'fr' ? 'en' : 'fr'; rendu(); };
 $('retour').onclick = () => {};
 // Démo : états de progression
 const DEMOS = [{}, { m1: { etoiles: 3, temps: 68, coque: 18 }, m2: { etoiles: 1, temps: 131, coque: 6 } }, Object.fromEntries(MER.missions.map((m) => [m.id, { etoiles: 3, temps: m.ref - 9, coque: 17 }]))];
-$('demo').onchange = (e) => { if (e.target.value === '') return; progres = DEMOS[+e.target.value]; garde(); rendu(); e.target.value = ''; };
+$('demo').onchange = (e) => { if (e.target.value === '') return; progres = JSON.parse(JSON.stringify(DEMOS[+e.target.value])); garde(); rendu(); e.target.value = ''; };
 rendu();
+// Retour par le bouton Précédent : relire la progression (la page peut revenir du cache du navigateur)
+addEventListener('pageshow', (e) => { if (!e.persisted) return; try { progres = JSON.parse(localStorage.getItem('souquez.proto.carte')) || {}; } catch (_) {} rendu(); });
 </script>
 </body>
 </html>
