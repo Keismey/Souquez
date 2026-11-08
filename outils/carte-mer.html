@@ -71,9 +71,9 @@ html, body { margin: 0; height: 100%; background: var(--marine); color: var(--cr
 'use strict';
 const $ = (id) => document.getElementById(id);
 const TXT = {
-  fr: { retour: '← Mers', fermer: 'Fermer', jouer: 'Larguer les amarres', objectif: 'Objectif', port: (x) => 'Atteindre la bouée à ' + x.toLocaleString('fr-FR'), boss: 'Vaincre ', ordre: 'Ordre appris', aucun: '—', ref: 'Temps de référence', best: 'Meilleur temps', coque: 'Meilleure coque', butin: 'Butin de base', jamais: 'pas encore joué', tempo: 'Tempo', ferme: 'Mission verrouillée', joue: (n) => 'Mission lancée : ' + n + ' (prototype, pas de partie ici)',
+  fr: { retour: '← Mers', fermer: 'Fermer', jouer: 'Larguer les amarres', objectif: 'Objectif', port: (x, b) => 'Atteindre ' + { bouee: 'la bouée', phare: 'le phare', epave: 'l’épave', port: 'le port' }[b || 'bouee'] + ' à ' + x.toLocaleString('fr-FR'), piece: ' + une pièce de navire rare la première fois', boss: 'Vaincre ', ordre: 'Ordre appris', aucun: '—', ref: 'Temps de référence', best: 'Meilleur temps', coque: 'Meilleure coque', butin: 'Butin de base', jamais: 'pas encore joué', tempo: 'Tempo', ferme: 'Mission verrouillée', joue: (n) => 'Mission lancée : ' + n + ' (prototype, pas de partie ici)',
     ADV: 'Avancer', ATK: 'Attaquer', DEF: 'Protéger', HEAL: 'Soigner' },
-  en: { retour: '← Seas', fermer: 'Close', jouer: 'Cast off', objectif: 'Goal', port: (x) => 'Reach the buoy at ' + x.toLocaleString('en-GB'), boss: 'Defeat ', ordre: 'New order', aucun: '—', ref: 'Target time', best: 'Best time', coque: 'Best hull', butin: 'Base loot', jamais: 'not played yet', tempo: 'Tempo', ferme: 'Locked mission', joue: (n) => 'Mission started: ' + n + ' (prototype, no game here)',
+  en: { retour: '← Seas', fermer: 'Close', jouer: 'Cast off', objectif: 'Goal', port: (x, b) => 'Reach the ' + { bouee: 'buoy', phare: 'lighthouse', epave: 'wreck', port: 'harbour' }[b || 'bouee'] + ' at ' + x.toLocaleString('en-GB'), piece: ' + a rare ship part the first time', boss: 'Defeat ', ordre: 'New order', aucun: '—', ref: 'Target time', best: 'Best time', coque: 'Best hull', butin: 'Base loot', jamais: 'not played yet', tempo: 'Tempo', ferme: 'Locked mission', joue: (n) => 'Mission started: ' + n + ' (prototype, no game here)',
     ADV: 'Advance', ATK: 'Attack', DEF: 'Protect', HEAL: 'Heal' },
 };
 let lang = 'fr';
@@ -124,10 +124,10 @@ function fiche(m, i) {
   $('fNom').textContent = (m.boss ? '' : (i + 1) + '. ') + m.nom[lang];
   $('fEt').innerHTML = [0, 1, 2].map((k) => ETOILE(k < (p.etoiles || 0))).join('');
   const rows = [
-    [t('objectif'), m.boss ? t('boss') + m.nom[lang] : t('port')(m.portX)],
+    [t('objectif'), m.boss ? t('boss') + m.nom[lang] : t('port')(m.portX, m.but)],
     [t('ordre'), m.ordre.length ? m.ordre.map((o) => t(o)).join(', ') : t('aucun')],
     ...(m.boss ? [[t('tempo'), m.bpm + ' BPM']] : []),
-    [t('ref'), temps(m.ref)], [t('best'), temps(p.temps)], [t('coque'), p.coque == null ? t('jamais') : p.coque + ' / 20'], [t('butin'), m.butin + ' ⚙'],
+    [t('ref'), temps(m.ref)], [t('best'), temps(p.temps)], [t('coque'), p.coque == null ? t('jamais') : p.coque + ' / 20'], [t('butin'), m.butin + ' ⚙' + (m.piece ? t('piece') : '')],
   ];
   $('fInfo').innerHTML = rows.map(([k, v]) => '<dt>' + k + '</dt><dd>' + v + '</dd>').join('');
   $('fJouer').onclick = () => { fermer(); $('total').title = t('joue')(m.nom[lang]); console.log(t('joue')(m.nom[lang])); };
@@ -136,7 +136,15 @@ function fiche(m, i) {
 function fermer() { $('fiche').hidden = true; if (dernier) dernier.focus(); }
 $('fFermer').onclick = fermer;
 $('fiche').onclick = (e) => { if (e.target === $('fiche')) fermer(); };
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('fiche').hidden) fermer(); });
+document.addEventListener('keydown', (e) => {
+  if ($('fiche').hidden) return;
+  if (e.key === 'Escape') fermer();
+  // Piège de focus : Tab reste dans la fiche ouverte
+  if (e.key === 'Tab') {
+    const f = [...$('fiche').querySelectorAll('button')], i = f.indexOf(document.activeElement);
+    e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+  }
+});
 $('lang').onclick = () => { lang = lang === 'fr' ? 'en' : 'fr'; rendu(); };
 $('retour').onclick = () => {};
 // Démo : états de progression
