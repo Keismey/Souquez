@@ -1,20 +1,20 @@
 {
- "nom": "Grondeuse (FACTICE pour tester le moteur)",
- "coque": { "img": "grondeuse_coupe.png", "largeur": 750 },
+ "nom": "La Grondeuse, image Gemini v3 (validée par le directeur le 8 nov.), non retouchée",
+ "coque": { "img": "navire-v3.jpg", "largeur": 750 },
  "ponts": {
-  "pont":     { "sol": 330, "haut": 79,  "x0": 200,  "x1": 1000, "postes": [380, 560, 900] },
-  "proue":    { "sol": 330, "haut": 79,  "x0": 1050, "x1": 1900, "postes": [1250, 1500, 1750] },
-  "canons":   { "sol": 611, "haut": 360, "x0": 800,  "x1": 1900, "postes": [1000, 1430, 1680] },
-  "machines": { "sol": 892, "haut": 641, "x0": 250,  "x1": 1350, "postes": [590, 940, 1150] }
+  "pont":     { "sol": 246, "haut": 116, "x0": 440,  "x1": 1240, "postes": [1130, 1180] },
+  "proue":    { "sol": 246, "haut": 116, "x0": 1020, "x1": 1240, "postes": [1090] },
+  "canons":   { "sol": 377, "haut": 268, "x0": 270,  "x1": 1210, "postes": [570, 845, 1070] },
+  "machines": { "sol": 549, "haut": 404, "x0": 370,  "x1": 1030, "postes": [800, 900, 960] }
  },
- "echelle": { "x": 705 },
+ "echelle": { "x": 481 },
  "pieces": {
-  "canon1": { "img": "canon.png", "pivot": [70, 60], "ancre": [1500, 545], "anim": "recul", "course": 40 },
-  "canon2": { "img": "canon.png", "pivot": [70, 60], "ancre": [1750, 545], "anim": "recul", "course": 40 },
-  "roue":   { "img": "roue.png", "pivot": [160, 160], "ancre": [300, 905], "anim": "rotation" },
-  "bielle": { "img": "bielle.png", "pivot": [40, 40], "ancre": [1000, 830], "anim": "vaetvient", "axe": [1, 0], "course": 40 },
-  "trou":   { "img": "degat_trou.png", "pivot": [70, 60], "ancre": [1250, 760], "anim": "degat", "seuil": 0.75 },
-  "rustine":{ "img": "degat_rustine.png", "pivot": [65, 55], "ancre": [500, 470], "anim": "degat", "seuil": 0.5 },
-  "plaque": { "img": "degat_plaque.png", "pivot": [75, 60], "ancre": [1600, 850], "anim": "degat", "seuil": 0.25 }
+  "canon1": { "img": "canon.png", "pivot": [70, 60], "ancre": [880, 330], "anim": "recul", "course": 40, "echelle": 0.4, "factice": true },
+  "canon2": { "img": "canon.png", "pivot": [70, 60], "ancre": [1100, 330], "anim": "recul", "course": 40, "echelle": 0.4, "factice": true },
+  "roue":   { "img": "roue.png", "pivot": [160, 160], "ancre": [183, 548], "anim": "rotation", "echelle": 0.25, "factice": true },
+  "bielle": { "img": "bielle.png", "pivot": [40, 40], "ancre": [600, 515], "anim": "vaetvient", "axe": [1, 0], "course": 30, "echelle": 0.35, "factice": true },
+  "trou":   { "img": "degat_trou.png", "pivot": [70, 60], "ancre": [1330, 470], "anim": "degat", "seuil": 0.75, "echelle": 0.5, "factice": true },
+  "rustine":{ "img": "degat_rustine.png", "pivot": [65, 55], "ancre": [170, 320], "anim": "degat", "seuil": 0.5, "echelle": 0.5, "factice": true },
+  "plaque": { "img": "degat_plaque.png", "pivot": [75, 60], "ancre": [800, 580], "anim": "degat", "seuil": 0.25, "echelle": 0.5, "factice": true }
  }
 }

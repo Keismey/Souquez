@@ -36,26 +36,27 @@ const SRC = new URLSearchParams(location.search).get('n') || 'proto/navire/navir
 const BEAT = 60 / 102;
 let N = null, zones = true, crew = true, pan = false;
 for (const [id, set] of [['zones', () => zones = !zones], ['crew', () => crew = !crew], ['pan', () => pan = !pan]]) $(id).onclick = () => { set(); $(id).classList.toggle('on'); };
-// Qui se tient à chaque poste (correspondance poste → personnage proposée par la Programmation)
-const EQUIPE = { pont: ['hortense', 'matelot'], proue: ['matelot'], canons: ['pepin', 'matelot'], machines: ['gaston', 'bouillon'] };
-const TAILLE = { pepin: 60, matelot: 90, hortense: 110, gaston: 95, bouillon: 100 };
-const X0 = 230, Y0 = 230; // place du navire à l'écran (coin de l'image brute)
+// Qui se tient à chaque poste (postes proposés par la DA, 8 nov.) : Hortense en haut, Pépin et les matelots aux canons, Gaston et Doc aux machines
+const EQUIPE = { pont: ['hortense'], canons: ['pepin', 'matelot', 'matelot'], machines: ['gaston', 'bouillon'] };
+// Hauteur à l'écran 1280×720 (px) : tailles de la charte réduites d'environ 25 % (directeur, 8 nov.), Hortense à 64 px
+const TAILLE = { pepin: 35, matelot: 52, hortense: 64, gaston: 55, bouillon: 58 };
+const X0 = 234, Y0 = 300; // place du navire à l'écran (coin de l'image brute)
 
 function frame(ts) {
   const t = ts / 1000, b = t / BEAT, f = b - Math.floor(b);
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = '#f2e6cc'; g.fillRect(0, 0, 1280, 470); g.fillStyle = '#7fa89a'; g.fillRect(0, 470, 1280, 250);
+  g.fillStyle = '#f2e6cc'; g.fillRect(0, 0, 1280, 560); g.fillStyle = '#7fa89a'; g.fillRect(0, 560, 1280, 160);
   if (!N) { requestAnimationFrame(frame); return; }
   const s = 1, k = N.k * s, hp = $('hp').value / 100;
   // Canons : recul sur chaque temps (un canon sur deux) ; roue et bielle au tempo
   const kick = (on) => on ? Math.exp(-f * 6) : 0, beat = Math.floor(b);
   NAVIRE.draw(g, N, X0, Y0 + Math.sin(t * 1.6) * 3, s, { recul: { canon1: kick(beat % 2 === 0), canon2: kick(beat % 2 === 1) }, roue: t * 1.2, piston: b * Math.PI, coque: hp });
-  g.fillStyle = 'rgba(28,62,86,.85)'; g.fillRect(0, 640, 1280, 80); // mer devant
+  g.fillStyle = 'rgba(28,62,86,.85)'; g.fillRect(0, 590, 1280, 130); // mer devant
   if (crew && typeof EQUIPAGE !== 'undefined') for (const [zone, noms] of Object.entries(EQUIPE)) {
     const P = NAVIRE.postes(N, zone, X0, Y0 + Math.sin(t * 1.6) * 3, s);
     noms.forEach((nom, i) => { const p = P.pts[i % P.pts.length]; if (!p) return;
       const etat = pan ? 'panique' : (EQUIPAGE.poste && EQUIPAGE.poste[nom]) || 'tambour';
-      EQUIPAGE.draw(g, nom, p[0], p[1], TAILLE[nom] * P.haut / 130, etat, t, 1, i); }); // tailles de la charte pour des ponts de 130 px, à l'échelle
+      EQUIPAGE.draw(g, nom, p[0], p[1], TAILLE[nom] * s, etat, t, 1, i); });
   }
   if (zones) {
     g.lineWidth = 2; g.font = 'bold 14px system-ui';

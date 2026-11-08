@@ -17,6 +17,7 @@
 //   }
 // }
 // pivot : point de la pièce (pixels de son image) posé sur l'ancre (pixels de l'image de la coque).
+// echelle (facultatif) : taille de la pièce par rapport à son image (1 par défaut).
 // anim : recul (canon, en arrière le long de x), rotation (roue), vaetvient (bielle, le long de axe),
 //        degat (cache visible quand la coque est sous « seuil » de ses points de vie), fixe.
 'use strict';
@@ -70,7 +71,7 @@ const NAVIRE = (() => {
       else if (P.anim === 'rotation') rot = e.roue || 0;
       else if (P.anim === 'vaetvient') { const a = Math.sin(e.piston || 0) * (P.course || 18), ax = P.axe || [1, 0]; dx = ax[0] * a; dy = ax[1] * a; }
       else if (P.anim === 'degat' && !((e.coque ?? 1) < (P.seuil ?? 0.5))) continue;
-      g.save(); g.translate(P.ancre[0] + dx, P.ancre[1] + dy); g.rotate(rot);
+      g.save(); g.translate(P.ancre[0] + dx, P.ancre[1] + dy); g.rotate(rot); if (P.echelle) g.scale(P.echelle, P.echelle);
       g.drawImage(P.img, P.ox - P.pivot[0], P.oy - P.pivot[1]);
       g.restore();
     }
