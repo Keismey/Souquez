@@ -95,3 +95,30 @@ body{background:var(--bg);color:var(--paper);font-family:var(--body);overflow:hi
 .dlgnext{font-size:.8rem;color:#7a6a5a;font-weight:800}
 .dlgskip{min-width:0;min-height:48px;font-size:1rem;padding:0 18px}
 @media (prefers-reduced-motion:reduce){.pad,.slot,.banner,.calpad{transition:none}.slot.beat{animation:none}}
+
+/* Carte de la mer (0.12) : palette de la charte */
+.carteov{background:#1F2A44;justify-content:flex-start;gap:8px;padding-top:10px;padding-bottom:12px}
+.carteov .ctop{display:flex;align-items:center;gap:12px;width:100%}
+.carteov .ctop h2{flex:1;text-align:left;font-size:clamp(1.1rem,3.6vh,1.6rem)}
+.carteov .ctop .btn{min-width:0;min-height:44px;font-size:1rem}
+.ctotal{display:flex;align-items:center;gap:6px;font-weight:800;color:#F2E6CC}
+.carte{position:relative;flex:1;width:100%;min-height:200px;border-radius:16px;overflow:hidden;background:#7FA89A;border:3px solid #1F2A44;box-shadow:0 0 0 2px #3C4D6B}
+.carte svg.fond{position:absolute;inset:0;width:100%;height:100%}
+.bouee{position:absolute;transform:translate(-50%,-50%);width:clamp(54px,13vh,84px);aspect-ratio:1;border-radius:50%;border:3px solid #1F2A44;background:#F2E6CC;color:#1F2A44;cursor:pointer;display:grid;place-items:center;padding:0;font:800 clamp(18px,4vh,26px) var(--display)}
+.bouee.boss{width:clamp(68px,17vh,104px);background:#B5452F;color:#F2E6CC}
+.bouee.ferme{background:#D9C9A6;color:#3C4D6B;filter:grayscale(.6);cursor:default}
+.bouee .cad{width:40%}
+.bouee:focus-visible{outline:3px solid #E0A82E;outline-offset:3px}
+.bouee.prochaine{animation:bpulse .588s ease-out infinite}
+@keyframes bpulse{0%{box-shadow:0 0 0 0 rgba(224,168,46,.9);transform:translate(-50%,-50%) scale(1.08)}70%{box-shadow:0 0 0 14px rgba(224,168,46,0);transform:translate(-50%,-50%) scale(1)}100%{box-shadow:0 0 0 0 rgba(224,168,46,0)}}
+@media (prefers-reduced-motion:reduce){.bouee.prochaine{animation:none;box-shadow:0 0 0 5px #E0A82E}}
+.etiq{position:absolute;transform:translate(-50%,0);text-align:center;pointer-events:none;white-space:nowrap}
+.etiq b{display:block;font:800 clamp(12px,2.6vh,15px) var(--body,Nunito),sans-serif;color:#1F2A44;background:rgba(242,230,204,.85);border-radius:8px;padding:1px 6px}
+.etoiles{display:inline-flex;gap:2px;margin-top:2px}.etoile{width:clamp(13px,3vh,18px)}
+.fiche{position:absolute;inset:0;z-index:5;background:rgba(15,22,38,.72);display:grid;place-items:center;padding:16px}
+.fiche[hidden]{display:none}
+.fiche .box{width:min(560px,100%);max-height:100%;overflow:auto;background:#F2E6CC;color:#1F2A44;border:3px solid #1F2A44;border-radius:16px;padding:14px 18px;text-align:left}
+.fiche h3{font:800 22px var(--display);margin:0 0 4px}
+.fiche dl{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin:8px 0 12px}.fiche dt{color:#3C4D6B}.fiche dd{margin:0;font-weight:800}
+.fiche .frow{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.fiche .btn{min-width:0;min-height:46px;font-size:1rem}
+.fiche .btn.alt{background:#3C4D6B;color:#F2E6CC}

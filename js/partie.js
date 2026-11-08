@@ -8,7 +8,9 @@ let G = null;
 const beatTime = (k) => G.start + k * SPB;
 const isPlayer = (m) => (G && G.mode === 'calib') ? (m >= 1 && m <= 3) : (m >= 1 && m % 2 === 1);
 function newGame(mode) {
-  initAudio();
+  initAudio(); resetBoss();
+  if ((mode || 'play') === 'play' && !MISSION) chargerMission(MER.missions[Math.max(0, prochaineMission())].id);
+  if ((mode || 'play') === 'calib') setTempo(); // calibrage toujours à 102 BPM
   // Histoire : l'intro de la mer 1 passe avant la toute première partie (une seule fois)
   if ((mode || 'play') === 'play' && !sceneSeen('mer1_intro')) { stopMusic(); G = null; renderSlots(); $('phase').textContent = ''; $('phase').classList.remove('go'); hint(''); updateCombo(); playScene('mer1_intro', () => newGame(mode)); return; }
   G = {
@@ -70,7 +72,7 @@ function onPad(pad, perfMs, el) {
   // Réglage automatique : on rapproche doucement le décalage de la façon de taper du joueur
   if (j !== 'x' && Math.abs(d) < 0.25) save.offset = clamp(off + d * 0.2, -0.1, 0.45);
   // Erreur visible tout de suite : plus aucune commande ne commence comme ça
-  if (!Object.values(COMMANDS).some(c => prefixOk(c.seq, S, slot))) evaluate();
+  if (!Object.entries(COMMANDS).some(([id, c]) => ordreOk(id) && prefixOk(c.seq, S, slot))) evaluate();
   renderSlots();
 }
 const inResp = (k) => !!(G.resp && k >= G.resp.k0 && k < G.resp.k0 + 4);
@@ -83,7 +85,7 @@ function evaluate() {
   persist();
   const S = ph.S;
   let found = null;
-  for (const [id, c] of Object.entries(COMMANDS)) if (prefixOk(c.seq, S, 3)) { found = id; break; }
+  for (const [id, c] of Object.entries(COMMANDS)) if (ordreOk(id) && prefixOk(c.seq, S, 3)) { found = id; break; }
   if (found) {
     const notes = COMMANDS[found].seq.filter(Boolean).length;
     const q = S.filter(x => x && x.j === 'p').length / notes;
@@ -129,15 +131,15 @@ function finishCalibGame() {
   if (v.length < 6) { banner(t('calFail'), true); newGame('calib'); return; }
   save.offset = clamp(v[Math.floor(v.length / 2)], -0.1, 0.45); persist(); refreshOpts();
   banner(t('calDone')(Math.round(save.offset * 1000)));
-  setTimeout(() => newGame('play'), 1200); G.won = true;
+  setTimeout(ouvrirCarte, 1200); G.won = true;
 }
 
 function aliveEnemy() { return G.mons.find(e => e.hp > 0); }
 const seqTxt = (id) => t('cmd' + id) + ' : ' + COMMANDS[id].seq.join(' ');
 function commandHint() {
   const foe = aliveEnemy();
-  if (G.mons.some(e => e.hp > 0 && e.tele && e.dmg >= WARN_DMG)) return seqTxt('DEF');
-  if (G.ship.hp <= SHIP.hull * 0.4) return seqTxt('HEAL');
+  if (ordreOk('DEF') && G.mons.some(e => e.hp > 0 && e.tele && e.dmg >= WARN_DMG)) return seqTxt('DEF');
+  if (ordreOk('HEAL') && G.ship.hp <= SHIP.hull * 0.4) return seqTxt('HEAL');
   return foe && foe.x - G.ship.x <= RANGE ? seqTxt('ATK') : seqTxt('ADV');
 }
 // Protéger couvre sa réponse et la commande suivante (8 temps)
@@ -146,9 +148,10 @@ function guarded(k) {
   // L'équipage se met à l'abri dès qu'une commande Protéger est en cours de frappe
   const ph = G.phrase; if (!ph || ph.done) return false;
   const n = ph.S.reduce((a, x, i) => x ? i : a, -1);
-  return n >= 2 && prefixOk(COMMANDS.DEF.seq, ph.S, n); // dès le 3e BOUM : seul Protéger commence ainsi
+  return n >= 2 && ordreOk('DEF') && prefixOk(COMMANDS.DEF.seq, ph.S, n); // dès le 3e BOUM : seul Protéger commence ainsi
 }
 function onBeatVisual(k) {
+  bossBeat(k);
   const m = Math.floor(k / 4), b = k % 4;
   G.pulse = 1; G.curMeasure = m; G.curBeat = G.mode === 'calib' ? b : k;
   const ph = $('phase'); let txt, go = false;
@@ -180,8 +183,8 @@ function onBeatVisual(k) {
     if (e.nextAtk == null) e.nextAtk = k + FIRST;
     if (k === e.nextAtk - TELE) { e.tele = 1; crewPanic(); if (e.dmg >= WARN_DMG) { hint(t('incoming')); G.hintHold = k + 2; } }
     if (k === e.nextAtk) {
-      e.tele = 0; e.nextAtk = k + e.every;
-      G.shots.push({ mon: true, spit: !!e.spitter, x0: e.x - 34 * e.size, y0: SEA - 70 * e.size, x1: G.ship.x + 70, y1: SEA - 40, t: 0, dur: e.shotDur, dmg: e.dmg });
+      e.tele = 0; e.nextAtk = k + e.every; e._atk = performance.now() / 1000; // pour le dessin (coup qui part)
+      G.shots.push({ mon: true, spit: !!e.spitter, x0: e.x - 34 * e.size, y0: corpsY(e, 70), x1: G.ship.x + 70, y1: SEA - 40, t: 0, dur: e.shotDur, dmg: e.dmg });
       playPad('BOUM', ctx.currentTime, 0.5, 0.6);
     }
   }
@@ -194,7 +197,7 @@ function onBeatVisual(k) {
     const reach = foe && foe.x - G.ship.x <= RANGE;
     for (let i = 0; i < 2; i++) {
       const mx = G.ship.x + 62 + i * 46;
-      G.shots.push({ x0: mx, y0: SEA - 30, x1: reach ? foe.x - 20 * foe.size + Math.random() * 16 : mx + 170 + Math.random() * 30, y1: reach ? SEA - 40 * foe.size : SEA + 4, t: 0, dur: 0.4 + i * 0.05, foe: reach ? foe : null, dmg: i === 0 ? (SHIP.shot + bonus) * powerMult() : 0 });
+      G.shots.push({ x0: mx, y0: SEA - 30, x1: reach ? foe.x - 20 * foe.size + Math.random() * 16 : mx + 170 + Math.random() * 30, y1: reach ? corpsY(foe, 40) : SEA + 4, t: 0, dur: 0.4 + i * 0.05, foe: reach ? foe : null, dmg: i === 0 ? (SHIP.shot + bonus) * powerMult() : 0 });
       G.ship.recoil[i] = 1;
     }
     if (rb === 1 && !reach) { hint(t('tooFar')); G.hintHold = k + 3; }
@@ -242,13 +245,13 @@ function winGame() {
   const time = Math.max(0, (G.lastVis - G.countBeats) * SPB); // décomptes exclus
   const stars = G.sunk ? 0 : 1 + (G.ship.hp >= SHIP.hull * STARS.hullRatio ? 1 : 0) + (time <= STARS.refTime ? 1 : 0);
   G.result = { time, stars };
-  save.stars = Math.max(save.stars || 0, stars); persist();
+  persist();
   $('stars').innerHTML = [0, 1, 2].map(i => '<i class="' + (i < stars ? 'on' : '') + '">★</i>').join('');
   // Détail : chaque étoile avec sa condition, réussie ou non, et la coque restante
   const hullOk = G.ship.hp >= SHIP.hull * STARS.hullRatio, timeOk = time <= STARS.refTime;
   const hullTxt = Math.floor(G.ship.hp) + '/' + SHIP.hull, hullMin = Math.ceil(SHIP.hull * STARS.hullRatio);
   const rows = G.sunk ? [[false, t('starsSunk')]] : [
-    [true, t('starPort')],
+    [true, starGoalTxt()],
     [hullOk, t('starHull')(hullTxt, hullMin)],
     [timeOk, t('starTime')(fmtTime(time), fmtTime(STARS.refTime))],
   ];
@@ -258,7 +261,9 @@ function winGame() {
   [1, 1.25, 1.5, 2].forEach((p, i) => playPad('DING', at + i * 0.15, 0.8, p));
   cheer(at + 0.2, true); cheer(at + 1.1, true); stopMusic(true);
   $('sP').textContent = G.stats.p; $('sG').textContent = G.stats.g; $('sM').textContent = G.stats.o; $('sC').textContent = G.best;
-  setTimeout(() => playScene('mer1_plaque', () => openOverlay('ovWin')), 900);
+  finMission(G.result);
+  // La plaque gravée : après la victoire contre Tonton Homard (Narration)
+  setTimeout(() => (MISSION && MISSION.boss && stars >= 1 ? playScene('mer1_plaque', () => openOverlay('ovWin')) : openOverlay('ovWin')), 900);
 }
 
 const lerp = (a, b, k) => a + (b - a) * k;
@@ -270,7 +275,7 @@ function update(dt) {
   const sh = G.ship, px = sh.x;
   sh.x = lerp(sh.x, sh.tx, 0.08); sh.wheel += (sh.x - px) * 0.05 + dt * 0.3;
   sh.recoil = sh.recoil.map(r => Math.max(0, r - dt * 4)); sh.hurt = Math.max(0, sh.hurt - dt * 2.5);
-  updateCrew(dt);
+  updateCrew(dt); bossUpdate();
   checkEvaluate(now);
   const kOwn = Math.round((now - (G.mode === 'calib' ? 0 : (save.offset ?? 0.05)) - G.start) / SPB);
   G.kOwn = kOwn;
@@ -311,8 +316,8 @@ function update(dt) {
 const ZONES = { machines: { y: 22, x0: -112, x1: 84 }, canons: { y: -6, x0: 6, x1: 122 }, pont: { y: -42, x0: -146, x1: -74 }, proue: { y: -42, x0: 34, x1: 150 } };
 const ORDER_ZONE = { ADV: 'machines', ATK: 'canons', DEF: 'proue', HEAL: 'pont' };
 const FIXED = [[-82, 22, 'machines'], [36, -6, 'canons'], [-120, -42, 'pont'], [146, -42, 'proue']];
-const LADDER = -56;
-function newCrew() { return Array.from({ length: 6 }, (_, i) => ({ x: -118 + i * 17, y: -6, tx: -118 + i * 17, ty: -6, panic: 0, ph: i * 1.3, zone: null, dir: 1 })); }
+let LADDER = -56; // remplacés par les ponts de navire.json quand le navire de la DA est chargé (js/rendu.js)
+function newCrew() { const z = ZONES.canons, n = 6; return Array.from({ length: n }, (_, i) => { const x = typeof NAV !== 'undefined' && NAV ? lerp(z.x0, z.x1, (i + 0.5) / n) : -118 + i * 17, y = NAV ? z.y : -6; return { x, y, tx: x, ty: y, panic: 0, ph: i * 1.3, zone: null, dir: 1 }; }); }
 // Panique (décision du directeur) : à l'annonce d'une attaque de monstre et quand la coque est touchée.
 // panic part de 1 : bras levés tant que panic > 0,2 (0,8 s), sur place tant que panic > 0,6 (0,4 s).
 function crewPanic() { if (G && G.crew) for (const r of G.crew) r.panic = 1; }
@@ -336,6 +341,8 @@ function updateCrew(dt) {
 }
 // Pas de game over : coque à zéro, le navire rentre au port réparé, les monstres gardent leurs dégâts
 function sinkShip() {
+  // Boss : coque cédée, le combat se relance tout de suite (Game design)
+  if (MISSION && MISSION.boss) { banner(t('sunk'), true); G.won = true; stopMusic(true); setTimeout(() => { if (G && G.won) newGame('play'); }, 1800); return; }
   banner(t('sunk'), true);
   const sh = G.ship; sh.hp = SHIP.hull; sh.x = sh.tx = 140; G.cam = null; G.sunk = true;
   G.combo = 0; G.lastRespEnd = -99; G.power = 0; updateCombo();

@@ -11,7 +11,7 @@ function applyTexts() {
 }
 function show(id, on) { $(id).hidden = !on; }
 let overlayStack = [];
-function openOverlay(id) { overlayStack.push(id); show(id, true); }
+function openOverlay(id) { overlayStack.push(id); show(id, true); if (id === 'ovWin' && typeof focusFin !== 'undefined' && focusFin) focusFin.focus(); }
 function closeOverlay() { const id = overlayStack.pop(); if (id) show(id, false); }
 
 const GLYPH = {
@@ -44,7 +44,7 @@ document.addEventListener('keydown', (e) => {
 });
 function seqHtml(seq) { return seq.map(p => p ? '<i style="background:' + PADS[p] + '">' + p[0] + '</i>' : '<i class="rest">·</i>').join(''); }
 function buildBook() {
-  $('bookList').innerHTML = Object.entries(COMMANDS).map(([id, c]) =>
+  $('bookList').innerHTML = Object.entries(COMMANDS).filter(([id]) => typeof ordreOk !== 'function' || ordreOk(id)).map(([id, c]) =>
     '<div class="cmd"><div><b>' + t('cmd' + id) + '</b><span>' + t('cmd' + id + 'd') + '</span></div><div class="seq">' + seqHtml(c.seq) + '</div></div>').join('');
 }
 let bannerTimer = 0;

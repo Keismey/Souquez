@@ -14,7 +14,47 @@ function rr(x, y, w, h, r) { cx.beginPath(); cx.roundRect ? cx.roundRect(x, y, w
 // pas de saut en changeant de pont). Ponts provisoires : machines 24, canons 26 ; pont et proue à l'air libre.
 // Avec le navire Gemini, ces hauteurs viendront de navire.json (ponts ~100 px).
 const PEPIN_MAX = 24, HANDS = 1.15, DECK_CLEAR = { machines: 24, canons: 26 };
-const PEPIN_H = Math.min(PEPIN_MAX, Math.min(...Object.values(DECK_CLEAR)) / HANDS);
+let PEPIN_H = Math.min(PEPIN_MAX, Math.min(...Object.values(DECK_CLEAR)) / HANDS);
+// ---------- Navire de la DA (image Gemini v3, assets/navire/navire.json, js/navire.js) ----------
+// Affiché à 750 px de large sur un écran de 720 px de haut. Équipage à la taille de la charte réduite de 25 % (directeur, 8 nov.),
+// en px à 720 de haut : les mains en panique restent sous le plafond des canons (55 px) et des machines (74 px).
+const TAILLE_EQ = { pepin: 35, matelot: 48, hortense: 64, gaston: 55, bouillon: 58 };
+let NAV = null, FIXES = [];
+function appliquerNavire(n) {
+  const k = n.k * PX_TO_UNIT, D = n.data; // unités du monde par pixel de l'image brute
+  n.ku = k; n.X0 = -(D.centre || 797) * k; n.Y0 = 20 - (D.flottaison || 540) * k; // flottaison un peu sous la mer du fond
+  const P = (rx, ry) => [n.X0 + rx * k, n.Y0 + ry * k];
+  for (const [z, Z] of Object.entries(D.ponts)) ZONES[z] = { y: P(0, Z.sol)[1], x0: P(Z.x0, 0)[0], x1: P(Z.x1, 0)[0] };
+  LADDER = P(D.echelle.x, 0)[0];
+  FIXES = Object.entries(D.fixes || {}).map(([nom, [z, rx]]) => ({ nom, zone: z, x: P(rx, 0)[0], y: ZONES[z].y }));
+  n.sabords = (D.sabords || []).map(([rx, ry]) => P(rx, ry));
+  PEPIN_H = TAILLE_EQ.pepin * PX_TO_UNIT;
+  NAV = n;
+  if (G) G.crew = newCrew();
+}
+if (typeof NAVIRE !== 'undefined') NAVIRE.load('assets/navire/navire.json').then((n) => { if (n) appliquerNavire(n); }).catch(() => {});
+// Personnage de la DA (js/equipage.js), h en unités du monde, dans le repère courant
+function perso(nom, x, y, h, etat, tm, dir, seed) {
+  cx.save(); cx.translate(x, y);
+  const s = Math.hypot(cx.getTransform().c, cx.getTransform().d) / dpr; cx.scale(1 / s, 1 / s);
+  EQUIPAGE.draw(cx, nom, 0, 0, h * s, etat, tm, dir || 1, seed || 0);
+  cx.restore();
+}
+// Navire v3 : coque, éclairs des sabords, équipage fixe (Hortense, Gaston, Doc) et mobile (Pépin et les matelots)
+function drawShipV3(sh, guard, pulse, listening) {
+  NAVIRE.draw(cx, NAV, NAV.X0, NAV.Y0, PX_TO_UNIT, {});
+  for (let i = 0; i < 2; i++) { const p = NAV.sabords[i]; if (p && sh.recoil[i] > 0.5) { C('rgba(255,200,90,' + sh.recoil[i] + ')'); cx.beginPath(); cx.arc(p[0] + 8, p[1], 10 * sh.recoil[i], 0, 7); cx.fill(); } }
+  const play = G && G.mode === 'play', resp = play && inResp(G.curBeat), tm = play && typeof ctx !== 'undefined' && ctx ? audibleAt(performance.now()) - G.start : tAmb;
+  const crew = G ? G.crew : newCrew(), alarm = crew.some((r) => r.panic > 0.2);
+  // Équipage fixe : tape sur l'objet de son poste pendant la réponse de l'équipage
+  FIXES.forEach((f, i) => perso(f.nom, f.x, f.y, TAILLE_EQ[f.nom] * PX_TO_UNIT, alarm ? 'panique' : resp ? EQUIPAGE.poste[f.nom] || 'tambour' : 'repos', resp ? tm : tAmb, f.nom === 'hortense' ? -1 : 1, i + 2));
+  crew.forEach((r, i) => {
+    const run = r.x !== r.tx || r.y !== r.ty, nom = i === 0 ? 'pepin' : 'matelot';
+    const tap = resp && !run && r.zone ? tapState(r.zone) : null;
+    perso(nom, r.x, r.y, TAILLE_EQ[nom] * PX_TO_UNIT, r.panic > 0.2 ? 'panique' : run ? 'course' : tap || 'repos', tap ? tm : tAmb, r.dir || 1, i);
+  });
+  if (guard) { const cxs = NAV.X0 + 1250 * NAV.ku, cys = NAV.Y0 + 360 * NAV.ku; cx.strokeStyle = 'rgba(120,220,255,.85)'; cx.lineWidth = 5; cx.beginPath(); cx.arc(cxs, cys, 120, -1.0, 1.0); cx.stroke(); C('rgba(120,220,255,.12)'); cx.beginPath(); cx.arc(cxs, cys, 120, -1.0, 1.0); cx.lineTo(cxs, cys); cx.fill(); }
+}
 // Pendant la réponse de l'équipage, un matelot à son poste tape le rythme sur l'objet de son poste.
 // État « tambour-<objet> » s'il existe dans js/equipage.js (livré par la DA), sinon « tambour » (petit tambour).
 const TAP_OBJ = { machines: 'marmite', canons: 'coque', pont: 'tambour', proue: 'coque' };
@@ -42,7 +82,9 @@ function mate(x, y, bob, tint, run, alarm, idx, dir) {
 }
 function drawShip(sh, guard, pulse, listening) {
   const bob = Math.sin(tAmb * 1.6) * 2 + sh.hurt * 3 * Math.sin(tAmb * 40);
-  cx.save(); cx.translate(sh.x, SEA + 6 + bob); cx.scale(0.9, 0.9);
+  cx.save(); cx.translate(sh.x, SEA + 6 + bob);
+  if (NAV) { drawShipV3(sh, guard, pulse, listening); cx.restore(); return; }
+  cx.scale(0.9, 0.9);
   const N = ART.navire;
   if (N) { // Image de la DA : coque en coupe (largeur en unités ; x, y = coin haut gauche par rapport au navire)
     const w = N.largeur || 330, h = w * N.img.height / N.img.width;
@@ -114,7 +156,7 @@ function drawOffscreenFoes(cam, VW) {
       if (o === e || o.fade <= 0) continue;
       const sx = o.x - cam, half = 60 * o.size;
       if (sx + half < x - 34 || sx - half > x + 34) continue;
-      const M2 = ART.monstres[o.type], top = M2 ? SEA + 20 - (M2.hauteur || 120) * o.size - 14 : SEA + 8 - 100 * o.size;
+      const M2 = ART.monstres[o.type], top = typeof MONSTRES !== 'undefined' && MONSTRE_NOM[o.type] ? SEA + 8 - monstreH(o) - 14 : M2 ? SEA + 20 - (M2.hauteur || 120) * o.size - 14 : SEA + 8 - 100 * o.size;
       y = Math.min(y, top - 34);
     }
     const r = 18 + tele * (4 + Math.sin(tAmb * 14) * 3);
@@ -123,15 +165,41 @@ function drawOffscreenFoes(cam, VW) {
     C('rgba(10,20,24,.82)'); cx.beginPath(); cx.arc(0, 0, r, 0, 7); cx.fill();
     cx.strokeStyle = tele ? '#ff5a3a' : '#f2e6cc'; cx.lineWidth = 2.5; cx.stroke();
     const M = ART.monstres[e.type];
-    if (M) { const h = r * 1.4, w = h * M.img.width / M.img.height; cx.save(); cx.beginPath(); cx.arc(0, 0, r - 2, 0, 7); cx.clip(); if (M.regard === 'droite') cx.scale(-1, 1); cx.drawImage(M.img, -w / 2, -h / 2, w, h); cx.restore(); }
+    if (typeof MONSTRES !== 'undefined' && MONSTRE_NOM[e.type]) { cx.save(); cx.beginPath(); cx.arc(0, 0, r - 2, 0, 7); cx.clip(); MONSTRES.draw(cx, MONSTRE_NOM[e.type], 2, r * 0.45, r * 1.3, tAmb, -1, 0, { prepare: e.raise }); cx.restore(); }
+    else if (M) { const h = r * 1.4, w = h * M.img.width / M.img.height; cx.save(); cx.beginPath(); cx.arc(0, 0, r - 2, 0, 7); cx.clip(); if (M.regard === 'droite') cx.scale(-1, 1); cx.drawImage(M.img, -w / 2, -h / 2, w, h); cx.restore(); }
     else { C(e.color); cx.beginPath(); cx.ellipse(-2, 0, 11, 8, -0.15, 0, 7); cx.fill(); C(tele ? '#ff5a3a' : '#f0c040'); cx.beginPath(); cx.arc(-6, -2, 2.5 + tele, 0, 7); cx.fill(); }
     // Flèche vers la droite : le monstre est par là
     C(tele ? '#ff5a3a' : '#f2e6cc'); cx.beginPath(); cx.moveTo(r + 4, -7); cx.lineTo(r + 13, 0); cx.lineTo(r + 4, 7); cx.closePath(); cx.fill();
     cx.restore();
   }
 }
+// Monstres de la DA dessinés en code (js/monstres.js). Tailles en px à 720 de haut, à côté du navire de 750 px.
+const MONSTRE_NOM = { sardine: 'sardine', crache: 'cracheur', cogneur: 'bernard', homard: 'homard' };
+const MONSTRE_PX = { sardine: 50, cracheur: 60, bernard: 75, homard: 190 };
+const monstreH = (e) => MONSTRE_PX[MONSTRE_NOM[e.type]] * PX_TO_UNIT;
+const depuis = (t0) => { if (t0 == null) return 0; const k = (performance.now() / 1000 - t0) / SPB; return k < 1 ? k : 0; };
+// Hauteur d'où partent les tirs (et où arrivent ceux du navire) : milieu du corps du monstre de la DA, sinon l'ancienne forme
+const corpsY = (e, old) => typeof MONSTRES !== 'undefined' && MONSTRE_NOM[e.type] ? SEA + 8 - monstreH(e) * 0.5 : SEA - old * e.size;
+function drawMonstreDA(e) {
+  const nom = MONSTRE_NOM[e.type], h = monstreH(e);
+  const etat = { prepare: e.raise, attaque: depuis(e._atk), touche: Math.min(1, e.shake), coule: 1 - e.fade };
+  if (e.type === 'homard' && B) {
+    etat.double = B.phase === 3 ? 1 : 0; etat.attaque2 = depuis(e._atk2); etat.colere = B.phase === 3 ? 1 : 0;
+    const kj = e._jet == null ? 1 : (performance.now() / 1000 - e._jet) / (1.5 * SPB); etat.jet = kj < 1 ? kj : 0;
+    if (etat.double && e.tele) etat.prepare = 1; // entre les 2 coups de la double pince
+  }
+  MONSTRES.draw(cx, nom, e.x, SEA + 8, h, tAmb, -1, e.x * 0.01, etat);
+  if (e.hp <= 0) return;
+  cx.save(); cx.globalAlpha = e.fade; const y = SEA + 8 - h - 10;
+  if (e.type === 'homard') { // barre de vie avec les seuils des phases
+    const bw = h * 0.7; C('rgba(0,0,0,.45)'); cx.fillRect(e.x - bw / 2, y - 4, bw, 7); C('#ffd447'); cx.fillRect(e.x - bw / 2, y - 4, bw * Math.max(0, e.hp) / e.max, 7);
+    C('#1F2A44'); for (const s of [BOSS.phase2, BOSS.phase3]) cx.fillRect(e.x - bw / 2 + bw * s / e.max - 1, y - 6, 2, 11);
+  } else { const w = e.max > 8 ? 7 : 10; for (let i = 0; i < e.max; i++) { C(i < e.hp ? '#ffd447' : 'rgba(0,0,0,.4)'); cx.beginPath(); cx.arc(e.x - (e.max - 1) * w / 2 + i * w, y, 3, 0, 7); cx.fill(); } }
+  cx.restore();
+}
 function drawMonster(e) {
   if (e.fade <= 0) return;
+  if (typeof MONSTRES !== 'undefined' && MONSTRE_NOM[e.type]) { drawMonstreDA(e); return; }
   const M = ART.monstres[e.type];
   if (M) { // Image de la DA : se dresse avant d'attaquer, tremble quand touchée, coule en mourant
     const hh = (M.hauteur || 120) * e.size, ww = hh * M.img.width / M.img.height, x = e.x + (Math.random() - 0.5) * 8 * e.shake;
@@ -166,14 +234,14 @@ function frame() {
   if (!W) resize();
   const dt = 1 / 60; tAmb += dt;
   if (G && !G.paused && ctx) update(dt);
-  const S = H / 400, VW = W / S;
+  const S = H / 400 * ZOOM, VW = W / S; // ZOOM < 1 : léger dézoom pendant les coups annoncés du boss (js/boss.js)
   const heat = G ? (G.heat ?? 0) : 0.3, pulse = G ? G.pulse : 0;
   const sh = G ? G.ship : { x: 140, tx: 140, hp: SHIP.hull, wheel: tAmb * 0.3, recoil: [0, 0], hurt: 0 };
   const camT = sh.x - VW * 0.36;
   if (G) { if (G.cam === null) G.cam = camT; G.cam = lerp(G.cam, camT, 0.08); }
   const cam = G ? G.cam : camT;
   const shx = G ? (Math.random() - 0.5) * 6 * G.shake : 0;
-  cx.setTransform(dpr * S, 0, 0, dpr * S, 0, 0);
+  cx.setTransform(dpr * S, 0, 0, dpr * S, 0, dpr * (H - 400 * S)); // dézoom : la mer reste en bas de l'écran
   // Ciel de crépuscule, plus chaud quand le rythme tient
   if (ART.fond) { // Image de la DA : fond de mer (couvre l'écran, léger décalage avec la caméra)
     // Le fond glisse en continu du début au port (pas de saut) : il est 15 % plus large que l'écran.
@@ -183,17 +251,16 @@ function frame() {
   } else {
   const sky = cx.createLinearGradient(0, 0, 0, SEA);
   sky.addColorStop(0, mix('#1b2a3d', '#2c3550', heat)); sky.addColorStop(1, mix('#8f6a5a', '#e0955a', heat));
-  C(sky); cx.fillRect(0, 0, VW, 400);
+  C(sky); cx.fillRect(0, -400, VW, 800);
   C('rgba(255,214,150,' + (0.35 + heat * 0.4) + ')'); cx.beginPath(); cx.arc(VW * 0.72 - cam * 0.03, SEA - 30, 34, 0, 7); cx.fill();
   for (let i = 0; i < 6; i++) { const x = ((i * 260 - cam * 0.15 + tAmb * 4) % (VW + 300) + VW + 300) % (VW + 300) - 150; C('rgba(40,44,60,.45)'); cx.beginPath(); cx.ellipse(x, 60 + (i % 3) * 40, 120, 18, 0, 0, 7); cx.fill(); }
   // Mer lointaine
   C('#24425a'); cx.fillRect(0, SEA - 4, VW, 400);
   }
   cx.save(); cx.translate(-cam + shx, 0);
-  // Fort ennemi au bout de la mer
+  // But au bout de la mer
   const fx = LEVEL.portX, lit = G ? G.totemLit : 0;
-  C(lit ? mix('#4a4a52', '#ffd447', lit) : '#4a4a52'); cx.fillRect(fx - 40, SEA - 120, 80, 120); cx.fillRect(fx - 56, SEA - 130, 112, 14);
-  C('#2a2a30'); for (let i = 0; i < 3; i++) cx.fillRect(fx - 30 + i * 24, SEA - 100, 10, 16);
+  drawGoal(fx, lit); // bouée, phare, épave ou port selon la mission (js/mer.js)
   if (G) for (const e of G.mons) drawMonster(e);
   const listening = G && G.mode !== 'calib' && inResp(G.curBeat);
   drawShip(sh, G && guarded(G.curBeat), pulse, listening);

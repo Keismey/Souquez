@@ -40,12 +40,13 @@ function stopMusic(fade) {
 function startMusic(k) {
   if (!musicBuf || !G || G.mode !== 'play') return;
   stopMusic();
-  const loop = MUS_BEATS * SPB, at = Math.max(beatTime(k), ctx.currentTime + 0.05);
+  // Tempo plus rapide (boss) : la musique à 102 BPM est jouée plus vite (en attendant ses propres musiques)
+  const spb0 = 60 / BPM_BASE, loop = MUS_BEATS * spb0, at = Math.max(beatTime(k), ctx.currentTime + 0.05);
   const kk = (at - G.start) / SPB;
   const src = ctx.createBufferSource(), g = ctx.createGain();
-  src.buffer = musicBuf; src.loop = true; src.loopStart = MUS_OFF; src.loopEnd = MUS_OFF + loop;
+  src.buffer = musicBuf; src.loop = true; src.loopStart = MUS_OFF; src.loopEnd = MUS_OFF + loop; src.playbackRate.value = BPM / BPM_BASE;
   src.connect(g); g.connect(musicBus); src._g = g;
-  src.start(at, MUS_OFF + (((kk * SPB) % loop) + loop) % loop);
+  src.start(at, MUS_OFF + (((kk * spb0) % loop) + loop) % loop);
   musicSrc = src;
 }
 // ---------- Voix de l'équipage (synthèse de formants, une petite foule de 5 voix) ----------

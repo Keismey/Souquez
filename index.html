@@ -48,6 +48,25 @@
       </div>
     </div>
   </div>
+  <!-- Carte de la mer : une bouée par mission, le boss au bout (js/mer.js) -->
+  <div class="overlay carteov" id="ovCarte" hidden>
+    <div class="ctop">
+      <button class="btn alt" id="carteRetour" data-t="mapBack"></button>
+      <h2 id="carteTitre"></h2>
+      <div class="ctotal" id="carteTotal" aria-live="polite"></div>
+    </div>
+    <div class="carte" id="carteZone">
+      <svg class="fond" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" id="carteRoute"></svg>
+      <div class="fiche" id="fiche" hidden role="dialog" aria-modal="true" aria-labelledby="fNom">
+        <div class="box">
+          <h3 id="fNom"></h3>
+          <div class="etoiles" id="fEt"></div>
+          <dl id="fInfo"></dl>
+          <div class="frow"><button class="btn alt" id="fFermer" data-t="closeMap"></button><button class="btn" id="fJouer" data-t="castOff"></button></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="rotate"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><rect x="20" y="8" width="24" height="44" rx="5" fill="none" stroke="#f8eed6" stroke-width="4"/><path d="M10 44 A24 24 0 0 0 30 58" fill="none" stroke="#ffd447" stroke-width="4" stroke-linecap="round"/><path d="M24 56 L31 59 L28 51" fill="none" stroke="#ffd447" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><b data-t="rotate"></b><p data-t="rotateHelp" style="margin:0;color:var(--muted);max-width:30ch"></p></div>
 
   <div class="overlay" id="ovBook" hidden>
@@ -63,7 +82,7 @@
     <button class="btn" id="resumeBtn" data-t="resume"></button>
     <button class="btn alt" id="optBtn2" data-t="options"></button>
     <button class="btn alt" id="restartBtn" data-t="restart"></button>
-    <button class="btn alt" id="titleBtn" data-t="toTitle"></button>
+    <button class="btn alt" id="titleBtn" data-t="toMap"></button>
     </div>
   </div>
 
@@ -112,7 +131,7 @@
     </div>
     <div class="btnrow">
     <button class="btn" id="againBtn" data-t="again"></button>
-    <button class="btn alt" id="titleBtn2" data-t="toTitle"></button>
+    <button class="btn alt" id="titleBtn2" data-t="toMap"></button>
     </div>
   </div>
 </div>
@@ -127,8 +146,12 @@
 <script src="js/interface.js"></script>
 <script src="js/partie.js"></script>
 <script src="js/ecrans.js"></script>
+<script src="js/mer.js"></script>
+<script src="js/boss.js"></script>
 <script src="js/images.js"></script>
 <script src="js/equipage.js"></script>
+<script src="js/monstres.js"></script>
+<script src="js/navire.js"></script>
 <script src="js/rendu.js"></script>
 <script src="js/dialogues.js"></script>
 <script src="js/histoire.js"></script>

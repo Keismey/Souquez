@@ -2,7 +2,8 @@
 'use strict';
 // ---------- Écrans ----------
 function startPlay(mode) { overlayStack.forEach(id => show(id, false)); overlayStack = []; if (ctx) ctx.resume(); newGame(mode); }
-$('playBtn').onclick = () => { initAudio(); goFullscreen(); startPlay(save.offset == null ? 'calib' : 'play'); };
+// Jouer : calibrage la toute première fois, puis la carte de la mer
+$('playBtn').onclick = () => { initAudio(); if (save.offset == null) { goFullscreen(); startPlay('calib'); } else ouvrirCarte(); };
 $('calBtn').onclick = () => { initAudio(); goFullscreen(); startPlay('calib'); };
 $('recalBtn').onclick = () => { initAudio(); startPlay('calib'); };
 $('optBtn1').onclick = () => { refreshOpts(); openOverlay('ovOpts'); };
@@ -30,7 +31,7 @@ function goFullscreen() {
   } catch (_) {}
 }
 function toTitle() { overlayStack.forEach(id => show(id, false)); overlayStack = []; stopMusic(); G = null; if (ctx) ctx.resume(); renderSlots(); $('phase').textContent = ''; openOverlay('ovTitle'); }
-$('titleBtn').onclick = toTitle; $('titleBtn2').onclick = toTitle;
+$('titleBtn').onclick = () => ouvrirCarte(); $('titleBtn2').onclick = () => ouvrirCarte();
 $('againBtn').onclick = () => { closeOverlay(); newGame('play'); };
 function pause() { if (!G || G.paused) return; G.paused = true; if (ctx) ctx.suspend(); }
 function resume() {
