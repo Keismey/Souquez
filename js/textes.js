@@ -25,9 +25,9 @@ const STR = {
     cmdDEF: 'Protéger', cmdDEFd: 'Blindage : dégâts très réduits', cmdHEAL: 'Soigner', cmdHEALd: 'Réparations de la coque',
     fail: 'Hésitation…', tooFar: 'Trop loin ! Avance d’abord.',
     incoming: 'Attaque en approche : protège-toi !', blocked: 'Bloqué !', hit: 'Touché !', sunk: 'Coque à zéro : retour au port',
-    won: 'Mer libérée !', wonText: 'Le fort ennemi est tombé. Ton équipage fête la victoire.', again: 'Rejouer',
+    won: 'Mer libérée !', wonText: 'Ton navire est arrivé au port. L’équipage souffle enfin.', again: 'Rejouer',
     power: 'puissance', fullPower: 'Pleine puissance !',
-    starsWhy: (time, ref) => 'Temps : ' + time + ' (3e étoile en ' + ref + ' ou moins). 2e étoile : coque à moitié ou plus.',
+    starPort: 'Port atteint', starHull: (hull, min) => 'Coque ' + hull + ' (' + min + ' min.)', starTime: (time, ref) => 'Temps ' + time + ' (' + ref + ' max.)',
     starsSunk: 'La coque a cédé pendant la traversée : pas d’étoile cette fois.',
   },
   en: {
@@ -53,9 +53,9 @@ const STR = {
     cmdDEF: 'Protect', cmdDEFd: 'Armour: much less damage taken', cmdHEAL: 'Heal', cmdHEALd: 'Hull repairs',
     fail: 'Hesitation…', tooFar: 'Too far! Move closer first.',
     incoming: 'Attack incoming: protect yourself!', blocked: 'Blocked!', hit: 'Hit!', sunk: 'Hull at zero: back to port',
-    won: 'Sea freed!', wonText: 'The enemy fort has fallen. Your crew celebrates.', again: 'Play again',
+    won: 'Sea freed!', wonText: 'Your ship has reached port. The crew can finally breathe.', again: 'Play again',
     power: 'power', fullPower: 'Full power!',
-    starsWhy: (time, ref) => 'Time: ' + time + ' (3rd star at ' + ref + ' or less). 2nd star: hull at half or more.',
+    starPort: 'Port reached', starHull: (hull, min) => 'Hull ' + hull + ' (' + min + ' min.)', starTime: (time, ref) => 'Time ' + time + ' (' + ref + ' max.)',
     starsSunk: 'Your hull gave way during the crossing: no star this time.',
   }
 };
