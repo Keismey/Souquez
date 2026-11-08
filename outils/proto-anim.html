@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prototype d'animation</title>
+<style>
+:root { --bg: #13302b; --panel: #1c3f39; --txt: #f2e6cc; --muted: #a9bdb4; --acc: #e0a82e; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 15px/1.4 system-ui, sans-serif; }
+header { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+h1 { font-size: 18px; margin: 0 10px 0 0; }
+button { background: #2f5a52; color: var(--txt); border: 0; border-radius: 8px; padding: 7px 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+button.on { background: var(--acc); color: #1f2a44; }
+#grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 0 16px 16px; }
+figure { margin: 0; background: var(--panel); border-radius: 10px; overflow: hidden; }
+figure canvas { width: 100%; display: block; aspect-ratio: 4 / 3; }
+figcaption { padding: 6px 10px; font-weight: 700; }
+#src { color: var(--muted); font-size: 13px; padding: 0 16px 8px; margin: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Prototype d'animation</h1>
+  <button id="slow">Ralenti</button>
+  <button id="real">Taille réelle en jeu</button>
+  <button id="flip">Regard à gauche</button>
+</header>
+<p id="src"></p>
+<div id="grid"></div>
+<script src="pantin.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const STATES = [['repos', 'Repos'], ['course', 'Course'], ['panique', 'Panique (alerte)'], ['tambour', 'Frappe de tambour']];
+let P = null, slow = false, real = false, dir = 1, t = 0, last = 0;
+const opt = (id, set) => $(id).onclick = () => { set(); $(id).classList.toggle('on'); };
+opt('slow', () => slow = !slow); opt('real', () => real = !real); opt('flip', () => dir = -dir);
+
+// Pantin : le dernier découpé dans l'outil (?src=decoupe), sinon celui du dépôt
+async function getPuppet() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('src') === 'decoupe') {
+    try {
+      const pack = JSON.parse(localStorage.getItem('souquez.decoupe')), files = pack.files;
+      const json = JSON.parse(files[pack.nom + '.json']), parts = {};
+      for (const [name, m] of Object.entries(json.morceaux)) {
+        const img = await new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = files[m.img]; });
+        const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0);
+        parts[name] = { img: c, pivot: m.pivot, points: m.points || {} };
+      }
+      $('src').textContent = 'Pantin : ' + pack.nom + ' (dernière découpe de l’outil)';
+      return PANTIN.prepare({ taille: json.taille, parts });
+    } catch (_) {}
+  }
+  const url = q.get('p') || 'proto/pepin/pepin.json';
+  $('src').textContent = 'Pantin : ' + url;
+  return PANTIN.load(url);
+}
+
+const cells = STATES.map(([id, label]) => {
+  const f = document.createElement('figure'), c = document.createElement('canvas'), cap = document.createElement('figcaption');
+  c.width = 480; c.height = 360; cap.textContent = label; f.append(c, cap); $('grid').appendChild(f);
+  return { id, c, g: c.getContext('2d') };
+});
+
+// Décor simple aux couleurs de la charte : pont du navire, mer, et tambour pour la frappe
+function scene(g, W, H, id, A, tt, foot) {
+  g.fillStyle = '#f2e6cc'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#7fa89a'; g.fillRect(0, foot + 6, W, H);
+  g.fillStyle = '#b5452f'; g.fillRect(0, foot, W, 8);
+  g.strokeStyle = '#1f2a44'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, foot); g.lineTo(W, foot); g.stroke();
+  if (id === 'course') { // lattes du pont qui défilent : il court sur place
+    g.strokeStyle = 'rgba(31,42,68,.35)'; for (let x = -((tt * 260) % 60) * dir; x < W + 60; x += 60) { g.beginPath(); g.moveTo(x, foot + 8); g.lineTo(x - 20, H); g.stroke(); }
+  }
+}
+// Tambour sur pied : sa peau est à la hauteur de la main au moment de la frappe
+function drum(g, x, foot, top, size, A) {
+  const hit = A && A.drum < 0.18 ? 1 - A.drum / 0.18 : 0, w = size, hh = size * 0.55;
+  g.save(); g.translate(x, top);
+  g.strokeStyle = '#1f2a44'; g.lineWidth = 2.5;
+  g.beginPath(); g.moveTo(-w * 0.3, hh); g.lineTo(-w * 0.42, foot - top); g.moveTo(w * 0.3, hh); g.lineTo(w * 0.42, foot - top); g.stroke();
+  if (hit) { g.strokeStyle = 'rgba(224,168,46,' + hit + ')'; g.lineWidth = 3; g.beginPath(); g.ellipse(0, 0, w * 0.5 + (1 - hit) * 26, w * 0.14 + (1 - hit) * 8, 0, 0, 7); g.stroke(); }
+  g.fillStyle = '#b5452f'; g.strokeStyle = '#1f2a44'; g.lineWidth = 2.5;
+  g.beginPath(); g.rect(-w / 2, 0, w, hh); g.fill(); g.stroke();
+  g.strokeStyle = '#e0a82e'; g.lineWidth = 2; g.beginPath(); for (let i = 0; i < 4; i++) { g.moveTo(-w / 2 + i * w / 4, hh * 0.15); g.lineTo(-w / 2 + (i + 1) * w / 4, hh * 0.85); g.moveTo(-w / 2 + (i + 1) * w / 4, hh * 0.15); g.lineTo(-w / 2 + i * w / 4, hh * 0.85); } g.stroke();
+  g.fillStyle = '#f2e6cc'; g.strokeStyle = '#1f2a44'; g.lineWidth = 2.5; g.beginPath(); g.ellipse(0, 0, w / 2, w * 0.13 * (1 - hit * 0.25), 0, 0, 7); g.fill(); g.stroke();
+  g.restore();
+}
+
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts; t += dt * (slow ? 0.25 : 1);
+  for (const { id, c, g } of cells) {
+    const W = c.width, H = c.height, foot = H - 50;
+    // Taille réelle : 60 px sur un écran de 720 px de haut, ramenée à la hauteur de la case
+    const h = real ? (P ? P.taille : 60) * H / 720 : H * 0.62;
+    const A = PANTIN.pose(id, t, 0);
+    scene(g, W, H, id, A, t, foot);
+    const x = id === 'tambour' ? W * 0.42 : W / 2;
+    if (P && id === 'tambour') {
+      const M = PANTIN.measurePose(P, PANTIN.pose('tambour', 0, 0)), k = h / P.height;
+      const hx = x + dir * M.hand[0] * k, hy = foot + (M.hand[1] - M.low) * k + h * 0.02;
+      drum(g, hx + dir * h * 0.1, foot, hy, h * 0.42, A);
+    }
+    if (P) PANTIN.draw(g, P, x, foot, h, id, t, dir, 0);
+  }
+  requestAnimationFrame(frame);
+}
+getPuppet().then((p) => { P = p; }).catch(() => { $('src').textContent = 'Pantin introuvable.'; });
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

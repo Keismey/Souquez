@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc d'essai équipage</title>
+<style>
+:root { --bg: #13302b; --panel: #1c3f39; --txt: #f2e6cc; --muted: #a9bdb4; --acc: #e0a82e; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 15px/1.4 system-ui, sans-serif; }
+header { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+h1 { font-size: 18px; margin: 0 10px 0 0; }
+button, select { background: #2f5a52; color: var(--txt); border: 0; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 14px; }
+button.on { background: var(--acc); color: #1f2a44; }
+#grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 0 16px 16px; }
+figure { margin: 0; background: var(--panel); border-radius: 10px; overflow: hidden; }
+figure canvas { width: 100%; display: block; aspect-ratio: 4 / 3; }
+figcaption { padding: 6px 10px; font-weight: 700; }
+#err { color: #ff8f7a; padding: 0 16px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Banc d'essai équipage</h1>
+  <select id="nom"><option value="pepin">Pépin (60 px)</option><option value="matelot">Matelot (90 px)</option><option value="hortense">Hortense (110 px)</option></select>
+  <button id="slow">Ralenti</button>
+  <button id="flip">Regard à gauche</button>
+</header>
+<div id="err"></div>
+<div id="grid"></div>
+<script>
+'use strict';
+// Charge le fichier de dessin (contrat : EQUIPAGE.draw) ; ?f=autre.js pour en tester un autre
+const SRC = new URLSearchParams(location.search).get('f') || 'proto/equipage.js';
+const TAILLE = { pepin: 60, matelot: 90, hortense: 110 };
+const STATES = [['repos', 'Repos'], ['course', 'Course'], ['panique', 'Panique'], ['tambour', 'Tambour (102 BPM)']];
+let slow = false, dir = 1, t = 0, last = 0;
+const $ = (id) => document.getElementById(id);
+$('slow').onclick = () => { slow = !slow; $('slow').classList.toggle('on'); };
+$('flip').onclick = () => { dir = -dir; $('flip').classList.toggle('on'); };
+const cells = STATES.map(([id, label]) => {
+  const f = document.createElement('figure'), c = document.createElement('canvas'), cap = document.createElement('figcaption');
+  c.width = 480; c.height = 360; cap.textContent = label; f.append(c, cap); $('grid').appendChild(f);
+  return { id, c, g: c.getContext('2d') };
+});
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts; t += dt * (slow ? 0.25 : 1);
+  const nom = $('nom').value;
+  for (const { id, c, g } of cells) {
+    const W = c.width, H = c.height, foot = H - 46;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = '#f2e6cc'; g.fillRect(0, 0, W, H); g.fillStyle = '#7fa89a'; g.fillRect(0, foot, W, H);
+    // sol qui défile, calé sur les pieds (vitesses données par la DA, en hauteurs par seconde)
+    const vit = { course: 0.82, panique: 1.2 }[id];
+    if (vit) { const hh = H * 0.62, off = ((t * vit * hh) % 40 + 40) % 40; g.strokeStyle = 'rgba(31,42,68,.35)'; g.lineWidth = 2;
+      g.beginPath(); for (let x = -40; x < W + 40; x += 40) { const xx = x - dir * off; g.moveTo(xx, foot + 4); g.lineTo(xx - 14, H); } g.stroke(); }
+    // battement : petit carré qui s'allume sur chaque temps
+    if (id === 'tambour') { const f = (t / (60 / 102)) % 1; g.fillStyle = f < 0.12 ? '#e0a82e' : 'rgba(31,42,68,.2)'; g.fillRect(12, 12, 18, 18); }
+    try {
+      EQUIPAGE.draw(g, nom, W * 0.4, foot, H * 0.62, id, t, dir, 0);       // en grand
+      EQUIPAGE.draw(g, nom, W * 0.85, foot, TAILLE[nom] * H / 720, id, t, dir, 1.3); // taille réelle en jeu
+      const m = g.getTransform(); if (m.a !== 1 || m.d !== 1 || m.e || m.f || g.globalAlpha !== 1) throw new Error('le dessin ne remet pas le contexte en place (save/restore)');
+    } catch (e) { $('err').textContent = 'Erreur : ' + e.message; }
+  }
+  requestAnimationFrame(frame);
+}
+const s = document.createElement('script'); s.src = SRC;
+s.onload = () => { if (typeof EQUIPAGE === 'undefined' || !EQUIPAGE.draw) $('err').textContent = 'Le fichier ne définit pas EQUIPAGE.draw'; else requestAnimationFrame(frame); };
+s.onerror = () => { $('err').textContent = 'Fichier introuvable : ' + SRC; };
+document.body.appendChild(s);
+</script>
+</body>
+</html>

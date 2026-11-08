@@ -1,0 +1,80 @@
+{
+ "nom": "pepin",
+ "taille": 60,
+ "morceaux": {
+  "tete": {
+   "img": "pepin_tete.png",
+   "pivot": [
+    114,
+    233
+   ]
+  },
+  "corps": {
+   "img": "pepin_corps.png",
+   "pivot": [
+    161,
+    294
+   ],
+   "points": {
+    "cou": [
+     161,
+     25
+    ],
+    "epaule": [
+     161,
+     58
+    ],
+    "hanche": [
+     160,
+     294
+    ]
+   }
+  },
+  "jambe": {
+   "img": "pepin_jambe.png",
+   "pivot": [
+    46,
+    28
+   ],
+   "points": {
+    "genou": [
+     49,
+     92
+    ]
+   }
+  },
+  "mollet": {
+   "img": "pepin_mollet.png",
+   "pivot": [
+    55,
+    40
+   ]
+  },
+  "bras": {
+   "img": "pepin_bras.png",
+   "pivot": [
+    43,
+    23
+   ],
+   "points": {
+    "coude": [
+     34,
+     116
+    ]
+   }
+  },
+  "avantbras": {
+   "img": "pepin_avantbras.png",
+   "pivot": [
+    34,
+    32
+   ],
+   "points": {
+    "main": [
+     48,
+     190
+    ]
+   }
+  }
+ }
+}

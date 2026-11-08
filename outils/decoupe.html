@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Découpe des planches</title>
+<style>
+:root { --bg: #13302b; --panel: #1c3f39; --txt: #f2e6cc; --muted: #a9bdb4; --acc: #e0a82e; --red: #b5452f; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 15px/1.4 system-ui, sans-serif; }
+header { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+h1 { font-size: 18px; margin: 0 12px 0 0; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; padding: 0 16px 16px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.board { position: relative; background: #2a2a33; border-radius: 10px; overflow: hidden; }
+#view { width: 100%; display: block; touch-action: none; cursor: crosshair; }
+aside { display: flex; flex-direction: column; gap: 10px; }
+.box { background: var(--panel); border-radius: 10px; padding: 10px; }
+.box h2 { font-size: 14px; margin: 0 0 6px; color: var(--acc); }
+.row { display: flex; gap: 6px; align-items: center; margin: 4px 0; flex-wrap: wrap; }
+label.file, button { background: var(--acc); color: #1f2a44; border: 0; border-radius: 8px; padding: 7px 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+button.alt { background: #2f5a52; color: var(--txt); }
+button.on { outline: 2px solid var(--acc); }
+input[type=text], input[type=number], select { background: #10251f; color: var(--txt); border: 1px solid #3c6a60; border-radius: 6px; padding: 5px 6px; font-size: 14px; }
+input[type=number] { width: 70px; }
+#list .piece { display: grid; grid-template-columns: 14px 1fr auto; gap: 6px; align-items: center; padding: 4px 0; border-top: 1px solid #2c5650; }
+#list .sw { width: 12px; height: 12px; border-radius: 3px; }
+#list small { color: var(--muted); display: block; }
+#list .piece.sel { background: #24504a; border-radius: 6px; }
+#msg { color: var(--muted); font-size: 13px; white-space: pre-line; }
+#prev { width: 100%; background: #7fa89a33; border-radius: 8px; display: block; }
+.help { color: var(--muted); font-size: 13px; margin: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Découpe des planches</h1>
+  <label class="file">Ouvrir une planche<input type="file" id="file" accept="image/*" hidden></label>
+  <span class="row">Nom <input type="text" id="nom" value="pepin" size="10"></span>
+  <span class="row">Taille à l'écran <input type="number" id="taille" value="60"> px</span>
+  <button id="exp">Exporter (zip)</button>
+  <a id="proto" class="alt" style="color:var(--acc)" href="proto-anim.html" target="_blank">Prototype d'animation</a>
+</header>
+<main>
+  <div>
+    <div class="board"><canvas id="view"></canvas></div>
+    <p class="help">Tout est automatique. Pour corriger : choisis le rôle d'un morceau dans la liste ; fais glisser un point (rond jaune = pivot, rond blanc = point d'attache) ; « Couper ici » puis touche le coude ou le genou d'un membre entier.</p>
+  </div>
+  <aside>
+    <div class="box"><h2>Aperçu animé</h2>
+      <canvas id="prev" width="320" height="240"></canvas>
+      <div class="row"><select id="anim"><option value="repos">Repos</option><option value="course">Course</option><option value="panique">Panique</option><option value="tambour">Tambour</option></select>
+      <button class="alt" id="cut">Couper ici</button></div>
+    </div>
+    <div class="box"><h2>Morceaux</h2><div id="list"></div></div>
+    <div class="box"><h2>Remarques</h2><div id="msg">Ouvre une planche (fond magenta).</div></div>
+  </aside>
+</main>
+<script src="pantin.js"></script>
+<script src="decoupe.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const COL = { modele: '#888', tete: '#e0a82e', corps: '#b5452f', bras: '#7fa89a', avantbras: '#5fd0b0', jambe: '#c77dff', mollet: '#ff8fab', accessoire: '#ffffff', ignore: '#444' };
+const NOMS = { modele: 'Modèle (référence)', tete: 'Tête', corps: 'Corps', bras: 'Bras (haut)', avantbras: 'Avant-bras + main', jambe: 'Cuisse', mollet: 'Mollet + pied', accessoire: 'Accessoire', ignore: 'En trop (ignoré)' };
+let S = null, sel = -1, cutMode = false, drag = null, P = null;
+const view = $('view'), g = view.getContext('2d');
+
+function load(src, name) {
+  const i = new Image();
+  i.onload = () => {
+    S = DECOUPE.analyse(i); S.img = i; sel = -1;
+    const base = (name || '').toLowerCase().replace(/\.[a-z]+$/, '').replace(/[-_ ]?planche.*$/, '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9_]/g, '_');
+    if (base) $('nom').value = base;
+    $('taille').value = /pepin/.test(base) ? 60 : /hortense/.test(base) ? 110 : 90;
+    view.width = i.naturalWidth; view.height = i.naturalHeight;
+    refresh();
+  };
+  i.src = src;
+}
+$('file').onchange = (e) => { const f = e.target.files[0]; if (f) load(URL.createObjectURL(f), f.name); };
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) load(URL.createObjectURL(f), f.name); });
+{ const q = new URLSearchParams(location.search).get('img'); if (q) load(q, q.split('/').pop()); }
+
+function refresh() { rebuild(); draw(); list(); notes(); save(); }
+function rebuild() { P = S ? DECOUPE.puppet(S.data, S.regs, +$('taille').value || 90) : null; }
+function draw() {
+  if (!S) return;
+  g.clearRect(0, 0, view.width, view.height);
+  g.fillStyle = '#3a3a44'; g.fillRect(0, 0, view.width, view.height);
+  g.drawImage(S.canvas, 0, 0);
+  const W = S.data.width;
+  S.regs.forEach((R, i) => {
+    g.strokeStyle = COL[R.role] || '#fff'; g.lineWidth = i === sel ? 5 : 2.5; g.setLineDash(R.role === 'ignore' ? [6, 6] : []);
+    const [x0, y0, x1, y1] = R.box; g.strokeRect(x0 - 4, y0 - 4, x1 - x0 + 8, y1 - y0 + 8);
+    g.setLineDash([]); g.fillStyle = COL[R.role]; g.font = 'bold 18px system-ui'; g.fillText((i + 1) + ' ' + (NOMS[R.role] || R.role), x0, y0 - 10);
+    if (R.role === 'modele' || R.role === 'ignore') return;
+    const dot = (p, c) => { g.fillStyle = c; g.strokeStyle = '#1f2a44'; g.lineWidth = 3; g.beginPath(); g.arc(p[0], p[1], 8, 0, 7); g.fill(); g.stroke(); };
+    dot(R.pivot, '#ffd447');
+    for (const v of Object.values(R.points || {})) dot(v, '#ffffff');
+  });
+}
+function list() {
+  const L = $('list'); L.innerHTML = '';
+  if (!S) return;
+  S.regs.forEach((R, i) => {
+    const d = document.createElement('div'); d.className = 'piece' + (i === sel ? ' sel' : '');
+    const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = COL[R.role];
+    const t = document.createElement('span'); t.textContent = (i + 1) + '. ' + (NOMS[R.role] || R.role);
+    if (R.note) { const s = document.createElement('small'); s.textContent = R.note; t.appendChild(s); }
+    const s = document.createElement('select');
+    for (const r of ['modele', ...DECOUPE.ROLES, 'ignore']) { const o = document.createElement('option'); o.value = r; o.textContent = NOMS[r]; if (r === R.role) o.selected = true; s.appendChild(o); }
+    s.onchange = () => {
+      // un seul morceau par rôle : l'ancien passe « en trop »
+      for (const o of S.regs) if (o !== R && o.role === s.value && s.value !== 'ignore') { o.role = 'ignore'; o.note = 'remplacé'; }
+      R.role = s.value; R.note = 'choisi à la main'; Object.assign(R, DECOUPE.defaults(S.data, R)); refresh();
+    };
+    d.onclick = (e) => { if (e.target !== s) { sel = i; draw(); list(); } };
+    d.append(sw, t, s); L.appendChild(d);
+  });
+}
+function notes() {
+  const m = [], have = new Set(S.regs.map((R) => R.role));
+  for (const r of DECOUPE.ROLES) if (r !== 'accessoire' && !have.has(r)) m.push('Il manque : ' + NOMS[r] + '.');
+  const extra = S.regs.filter((R) => R.role === 'ignore').length; if (extra) m.push(extra + ' morceau(x) en trop, ignoré(s).');
+  for (const R of S.regs) if (/coupé/.test(R.note || '') && R.role !== 'jambe' && R.role !== 'bras') m.push(NOMS[R.role] + ' : ' + R.note + '.');
+  if (!m.length) m.push('Tout est en place.');
+  $('msg').textContent = m.join('\n');
+}
+const b64 = (u) => { let s = ''; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
+// Le prototype d'animation lit le dernier pantin découpé
+async function save() {
+  try {
+    const files = await DECOUPE.exportFiles(S.data, S.regs, $('nom').value || 'perso', +$('taille').value || 90);
+    const pack = {}; for (const f of files) pack[f.name] = f.name.endsWith('.json') ? new TextDecoder().decode(f.data) : 'data:image/png;base64,' + b64(f.data);
+    localStorage.setItem('souquez.decoupe', JSON.stringify({ nom: $('nom').value, files: pack }));
+  } catch (_) {}
+}
+$('taille').onchange = refresh;
+$('cut').onclick = () => { cutMode = !cutMode; $('cut').classList.toggle('on', cutMode); };
+$('exp').onclick = async () => {
+  if (!S) return;
+  const nom = $('nom').value || 'perso', files = await DECOUPE.exportFiles(S.data, S.regs, nom, +$('taille').value || 90);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(DECOUPE.zip(files)); a.download = nom + '_morceaux.zip'; a.click();
+};
+
+// Souris / doigt : glisser un point, ou couper
+const pos = (e) => { const r = view.getBoundingClientRect(); return [(e.clientX - r.left) * view.width / r.width, (e.clientY - r.top) * view.height / r.height]; };
+const hitRegion = (p) => S.regs.findIndex((R) => p[0] >= R.box[0] - 6 && p[0] <= R.box[2] + 6 && p[1] >= R.box[1] - 6 && p[1] <= R.box[3] + 6);
+view.addEventListener('pointerdown', (e) => {
+  if (!S) return; const p = pos(e);
+  if (cutMode) {
+    const i = hitRegion(p); if (i < 0) return; const R = S.regs[i];
+    const s = (p[0] - R.c[0]) * R.u[0] + (p[1] - R.c[1]) * R.u[1];
+    const [A, B] = DECOUPE.split(S.data, R, s), leg = R.role === 'jambe' || R.role === 'mollet' || (R.col.moutarde > 0.1);
+    A.role = leg ? 'jambe' : 'bras'; B.role = leg ? 'mollet' : 'avantbras'; A.note = B.note = 'coupé à la main';
+    for (const o of S.regs) if (o !== R && (o.role === A.role || o.role === B.role)) { o.role = 'ignore'; o.note = 'remplacé'; }
+    Object.assign(A, DECOUPE.defaults(S.data, A)); Object.assign(B, DECOUPE.defaults(S.data, B));
+    S.regs.splice(i, 1, A, B); cutMode = false; $('cut').classList.remove('on'); refresh(); return;
+  }
+  let best = null, bd = 18 * view.width / view.getBoundingClientRect().width;
+  S.regs.forEach((R) => { if (R.role === 'modele' || R.role === 'ignore') return;
+    const pts = [['pivot', R.pivot], ...Object.entries(R.points || {})];
+    for (const [k, v] of pts) { const dd = Math.hypot(v[0] - p[0], v[1] - p[1]); if (dd < bd) { bd = dd; best = { R, k }; } } });
+  if (best) { drag = best; view.setPointerCapture(e.pointerId); }
+  else { const i = hitRegion(p); if (i >= 0) { sel = i; draw(); list(); } }
+});
+view.addEventListener('pointermove', (e) => { if (!drag) return; const p = pos(e); if (drag.k === 'pivot') drag.R.pivot = p; else drag.R.points[drag.k] = p; rebuild(); draw(); });
+view.addEventListener('pointerup', () => { if (drag) { drag = null; refresh(); } });
+
+// Aperçu animé
+const pv = $('prev'), pg = pv.getContext('2d');
+(function loop(ts) {
+  pg.clearRect(0, 0, pv.width, pv.height);
+  if (P) PANTIN.draw(pg, P, pv.width / 2, pv.height - 16, pv.height * 0.8, $('anim').value, ts / 1000, 1, 0);
+  requestAnimationFrame(loop);
+})(0);
+</script>
+</body>
+</html>
