@@ -20,7 +20,7 @@
     <div class="hud">
       <button class="iconbtn" id="pauseBtn" aria-label="Pause"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="3" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="3" width="4" height="14" rx="1.5" fill="currentColor"/></svg></button>
       <div class="phase" id="phase"></div>
-      <div class="combo" id="combo"><div><span id="comboN">0</span><small data-t="combo"></small></div></div>
+      <div class="combo" id="combo"><div><span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i></span><small data-t="power"></small></div></div>
     </div>
     <div class="banner" id="banner"></div>
     <div id="beatFrame"></div>
@@ -93,7 +93,8 @@
 
   <div class="overlay" id="ovWin" hidden>
     <h2 data-t="won"></h2>
-    <p data-t="wonText"></p>
+    <div class="starsrow" id="stars" aria-hidden="true"></div>
+    <p id="starsWhy"></p>
     <div class="stats">
       <div><b id="sP">0</b><span data-t="perfect"></span></div>
       <div><b id="sG">0</b><span data-t="good"></span></div>
@@ -117,6 +118,5 @@
 <script src="js/ecrans.js"></script>
 <script src="js/rendu.js"></script>
 <script src="js/main.js"></script>
-<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 </body>
 </html>
