@@ -39,10 +39,12 @@ function resume() {
   ctx.resume().then(() => {
     if (!G) return;
     if (G.mode === 'calib') { newGame('calib'); return; }
-    // On repart sur un tempo propre : commande et réponse en cours oubliées, combo gardé
-    const k = Math.max(4, G.lastVis + 1);
+    // On repart sur un tempo propre avec un décompte de 4 temps : commande et réponse en cours oubliées.
+    // La reprise compte comme un départ libre : pas de pénalité « rythme cassé » au premier ordre.
+    const k = Math.max(0, G.lastVis + 1);
     G.start = ctx.currentTime + 0.6 - k * SPB; G.lastSched = k - 1; G.lastVis = k - 1;
-    G.phrase = null; G.resp = null; G.gridK = k; G.lastRespEnd = G.combo > 0 ? k : -99;
+    G.playFrom = Math.max(4, k + 4); G.countBeats += G.playFrom - k;
+    G.phrase = null; G.resp = null; G.gridK = G.playFrom; G.lastRespEnd = -99; G.failUntil = -1;
     startMusic(k);
     G.paused = false;
   });

@@ -10,13 +10,13 @@ const isPlayer = (m) => (G && G.mode === 'calib') ? (m >= 1 && m <= 3) : (m >= 1
 function newGame(mode) {
   initAudio();
   // Histoire : l'intro de la mer 1 passe avant la toute première partie (une seule fois)
-  if ((mode || 'play') === 'play' && !sceneSeen('mer1_intro')) { stopMusic(); G = null; renderSlots(); playScene('mer1_intro', () => newGame(mode)); return; }
+  if ((mode || 'play') === 'play' && !sceneSeen('mer1_intro')) { stopMusic(); G = null; renderSlots(); $('phase').textContent = ''; $('phase').classList.remove('go'); hint(''); updateCombo(); playScene('mer1_intro', () => newGame(mode)); return; }
   G = {
     mode: mode || 'play', start: ctx.currentTime + 0.8, lastSched: -1, lastVis: -1, slots: {}, evaluated: new Set(), cmds: {}, quality: {},
     combo: 0, best: 0, stats: { p: 0, g: 0, o: 0 }, power: 0, sunk: false, ship: { x: 140, tx: 140, hp: SHIP.hull, wheel: 0, recoil: [0, 0], hurt: 0 }, cam: null, calTaps: [],
     mons: LEVEL.monsters.map(m => { const T = MONSTERS[m.type]; return { ...T, ...m, max: T.hp, shake: 0, fade: 1, nextAtk: null, tele: 0, raise: 0 }; }),
     shots: [], puffs: [], fx: [], crew: newCrew(), pulse: 0, won: false, paused: false, shake: 0, totemLit: 0, curMeasure: 0, curBeat: 0, ownSlot: -1,
-    phrase: null, failUntil: -1, resp: null, gridK: 4, lastRespEnd: -99, kOwn: 0, sig: '', hintHold: -1,
+    phrase: null, failUntil: -1, playFrom: 4, countBeats: 4, resp: null, gridK: 4, lastRespEnd: -99, kOwn: 0, sig: '', hintHold: -1,
   };
   stopMusic(); if (G.mode === 'play') startMusic(0);
   hint(G.mode === 'calib' ? t('calGo') : ''); renderSlots(); updateCombo();
@@ -53,7 +53,7 @@ function onPad(pad, perfMs, el) {
   const off = save.offset ?? 0.05;
   const ta = raw - off;
   const k = Math.round((ta - G.start) / SPB);
-  if (k < 4) return;
+  if (k < G.playFrom) return; // décompte
   if (k <= G.failUntil) return; // fin de l'ordre raté : pas de nouvelle commande (une erreur = une pénalité)
   if (inResp(k)) { hint(t('listenHint')); G.hintHold = k + 3; return; }
   // Départ libre : la première tape ouvre une commande de 4 temps sur ce temps-là
@@ -111,7 +111,9 @@ function schedule() {
   while (beatTime(G.lastSched + 1) < ahead) {
     const k = ++G.lastSched, b = k % 4;
     // En partie, toujours le même tic (on démarre sur n'importe quel temps), et seulement si on le veut ou sans musique
-    if (G.mode === 'calib' || save.tick || !musicBuf) tick(beatTime(k), G.mode === 'calib' && b === 0);
+    // Décompte (départ et reprise) : toujours audible, accent sur le premier temps
+    const count = G.mode === 'play' && k < G.playFrom && k >= G.playFrom - 4;
+    if (G.mode === 'calib' || save.tick || !musicBuf || count) tick(beatTime(k), (G.mode === 'calib' && b === 0) || (count && k === G.playFrom - 4));
   }
 }
 setInterval(schedule, 25);
@@ -159,7 +161,7 @@ function onBeatVisual(k) {
   }
   // Partie : le tempo tourne en continu, le joueur démarre quand il veut
   const ph$ = G.phrase && !G.phrase.done;
-  if (k < 4) txt = t('ready') + ' ' + (4 - k);
+  if (k < G.playFrom) txt = t('ready') + ' ' + (G.playFrom - k);
   else if (inResp(k)) { const rb = k - G.resp.k0; txt = rb >= 2 ? t('soon') + ' ' + (4 - rb) : t('listen'); if (rb >= 2 && k >= G.hintHold) hint(commandHint()); }
   else { txt = t('yourTurn'); go = true; if (!ph$ && k >= G.hintHold) hint(commandHint()); }
   // Combo perdu si la commande suivante ne démarre pas juste après la réponse
@@ -209,7 +211,7 @@ function slotView() {
   const ph = G.phrase;
   if (ph && !ph.done) { const c = k - ph.k0; return { S: ph.S, cur: c >= 0 && c <= 3 ? c : -1, listen: false }; }
   if (ph && k < ph.k0 + 5) return { S: ph.S, cur: -1, listen: false };
-  if (k < 4) return { S: EMPTY4, cur: -1, listen: true };
+  if (k < G.playFrom) return { S: EMPTY4, cur: -1, listen: true };
   // Au repos, seule la case 1 pulse sur chaque temps : la commande démarre toujours là
   return { S: EMPTY4, cur: 0, listen: false };
 }
@@ -237,7 +239,7 @@ const fmtTime = (s) => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).pad
 function winGame() {
   G.won = true; save.best = Math.max(save.best, G.best);
   // Temps de jeu en temps de musique (les pauses ne comptent pas), depuis la fin du décompte
-  const time = Math.max(0, (G.lastVis - 4) * SPB);
+  const time = Math.max(0, (G.lastVis - G.countBeats) * SPB); // décomptes exclus
   const stars = G.sunk ? 0 : 1 + (G.ship.hp >= SHIP.hull * STARS.hullRatio ? 1 : 0) + (time <= STARS.refTime ? 1 : 0);
   G.result = { time, stars };
   save.stars = Math.max(save.stars || 0, stars); persist();
