@@ -11,7 +11,7 @@ const C = (c) => cx.fillStyle = c;
 function rr(x, y, w, h, r) { cx.beginPath(); cx.roundRect ? cx.roundRect(x, y, w, h, r) : cx.rect(x, y, w, h); }
 function mate(x, y, bob, tint, run, alarm, idx, dir) {
   // Image de la DA si elle existe : matelot en morceaux animé
-  if (ART.equipage.length) { const P = ART.equipage[(idx || 0) % ART.equipage.length]; drawPuppet(P, x, y, run ? 'run' : alarm ? 'alarm' : 'idle', bob, dir || 1, (idx || 0) * 1.7); return; }
+  if (ART.equipage.length) { const P = ART.equipage[(idx || 0) % ART.equipage.length]; drawPuppet(P, x, y, alarm ? 'alarm' : run ? 'run' : 'idle', bob, dir || 1, (idx || 0) * 1.7); return; }
   y -= bob * 5 + (run ? Math.abs(Math.sin(tAmb * 18 + x)) * 3 : 0);
   C(tint || '#e9dcc0');
   if (run) { cx.strokeStyle = tint || '#e9dcc0'; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(x - 4, y - 12); cx.lineTo(x - 8, y - 22); cx.moveTo(x + 4, y - 12); cx.lineTo(x + 8, y - 22); cx.stroke(); }
@@ -81,6 +81,26 @@ function drawShip(sh, guard, pulse, listening) {
   if (guard) { cx.strokeStyle = 'rgba(120,220,255,.85)'; cx.lineWidth = 5; cx.beginPath(); cx.arc(40, -20, 150, -1.0, 1.0); cx.stroke(); C('rgba(120,220,255,.12)'); cx.beginPath(); cx.arc(40, -20, 150, -1.0, 1.0); cx.lineTo(40, -20); cx.fill(); }
   cx.restore();
 }
+// Monstre qui attaque hors de l'écran (Crache-Boulons, portée 760) : badge au bord droit,
+// à la hauteur du monstre. Pendant l'annonce, il grossit et clignote en rouge comme le monstre lui-même.
+function drawOffscreenFoes(cam, VW) {
+  let n = 0;
+  for (const e of G.mons) {
+    if (e.hp <= 0 || e.fade < 1 || e.x - G.ship.x > e.reach || e.x - cam < VW - 12) continue;
+    const y = SEA - 62 - n++ * 54, x = VW - 44, tele = e.tele ? 1 : 0;
+    const r = 18 + tele * (4 + Math.sin(tAmb * 14) * 3);
+    cx.save(); cx.translate(x, y);
+    if (tele) { C('rgba(255,90,58,' + (0.35 + Math.sin(tAmb * 14) * 0.2) + ')'); cx.beginPath(); cx.arc(0, 0, r + 10, 0, 7); cx.fill(); }
+    C('rgba(10,20,24,.82)'); cx.beginPath(); cx.arc(0, 0, r, 0, 7); cx.fill();
+    cx.strokeStyle = tele ? '#ff5a3a' : '#f2e6cc'; cx.lineWidth = 2.5; cx.stroke();
+    const M = ART.monstres[e.type];
+    if (M) { const h = r * 1.4, w = h * M.img.width / M.img.height; cx.save(); cx.beginPath(); cx.arc(0, 0, r - 2, 0, 7); cx.clip(); if (M.regard === 'droite') cx.scale(-1, 1); cx.drawImage(M.img, -w / 2, -h / 2, w, h); cx.restore(); }
+    else { C(e.color); cx.beginPath(); cx.ellipse(-2, 0, 11, 8, -0.15, 0, 7); cx.fill(); C(tele ? '#ff5a3a' : '#f0c040'); cx.beginPath(); cx.arc(-6, -2, 2.5 + tele, 0, 7); cx.fill(); }
+    // Flèche vers la droite : le monstre est par là
+    C(tele ? '#ff5a3a' : '#f2e6cc'); cx.beginPath(); cx.moveTo(r + 4, -7); cx.lineTo(r + 13, 0); cx.lineTo(r + 4, 7); cx.closePath(); cx.fill();
+    cx.restore();
+  }
+}
 function drawMonster(e) {
   if (e.fade <= 0) return;
   const M = ART.monstres[e.type];
@@ -127,8 +147,10 @@ function frame() {
   cx.setTransform(dpr * S, 0, 0, dpr * S, 0, 0);
   // Ciel de crépuscule, plus chaud quand le rythme tient
   if (ART.fond) { // Image de la DA : fond de mer (couvre l'écran, léger décalage avec la caméra)
-    const F = ART.fond.img, s = Math.max((VW + 60) / F.width, 400 / F.height), fw = F.width * s;
-    cx.drawImage(F, -((cam * 0.05) % 60) - 30, 0, fw, F.height * s);
+    // Le fond glisse en continu du début au port (pas de saut) : il est 15 % plus large que l'écran.
+    const F = ART.fond.img, s = Math.max(VW * 1.15 / F.width, 400 / F.height), fw = F.width * s;
+    const prog = Math.min(1, Math.max(0, cam / Math.max(1, LEVEL.portX - VW * 0.64)));
+    cx.drawImage(F, -prog * (fw - VW), 0, fw, F.height * s);
   } else {
   const sky = cx.createLinearGradient(0, 0, 0, SEA);
   sky.addColorStop(0, mix('#1b2a3d', '#2c3550', heat)); sky.addColorStop(1, mix('#8f6a5a', '#e0955a', heat));
@@ -161,6 +183,7 @@ function frame() {
   for (let x = Math.floor((cam - 50) / 20) * 20; x <= cam + VW + 50; x += 20) cx.lineTo(x, SEA + 36 + Math.sin(x * 0.05 + tAmb * 2) * 4);
   cx.stroke();
   cx.restore();
+  if (G) drawOffscreenFoes(cam, VW);
   // Coque restante, dans le coin haut gauche sous la pause
   cx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const f = sh.hp / SHIP.hull, bx0 = 16, by0 = 70;
