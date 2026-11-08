@@ -19,6 +19,11 @@ Tenue par le fil QA. Le directeur signale les bugs dans le fil Directeur, qui le
 | 10 | ⚪ | 0.10.0 | Le fond saute de 60 unités 2 fois par mission. | Programmation | vérifié (0.10.2) |
 | 11 | ⚪ | 0.10.0 | La pose d'alerte des matelots n'est presque jamais visible. | Programmation / DA | vérifié (0.10.2) |
 | 12 | ⚪ | 0.10.3 | En 863×360, le badge du 2e Crache-Boulons (hors écran) chevauche le 1er, en partie visible. Détail visuel, comportement correct (badge masqué pour un monstre visible depuis 0.10.3). | Programmation | vérifié (0.10.4) |
+| 13 | 🟠 | 0.11.1 | Les coups de tambour de Pépin s'affichent 36 ms avant le son (horloge audio au lieu de `audibleAt`) ; écart plus grand sur téléphone. | Programmation | ouvert |
+| 14 | ⚪ | 0.11.1 | En panique, les mains de Pépin entrent dans le plancher au-dessus de la salle des machines (27,2 unités pour 24 de haut). | Programmation | ouvert |
+| 15 | ⚪ | 0.11.1 | La panique de Pépin suit chaque ordre, pas l'annonce d'attaque (écart avec le plan). Voulu ou non : au directeur de trancher. | Directeur → Programmation | ouvert |
+| 16 | ⚪ | 0.11.1 | Pépin se tourne vers la droite à l'arrivée, quel que soit le sens de sa course. | Programmation | ouvert |
+| 17 | ⚪ | 0.11.1 | Fluidité −12 % avec le processeur ralenti 6 fois : à confirmer sur le G85 par le directeur. | Directeur | à confirmer |
 
 ## Versions validées
 
