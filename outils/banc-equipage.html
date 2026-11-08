@@ -50,6 +50,10 @@ function frame(ts) {
     const W = c.width, H = c.height, foot = H - 46;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.fillStyle = '#f2e6cc'; g.fillRect(0, 0, W, H); g.fillStyle = '#7fa89a'; g.fillRect(0, foot, W, H);
+    // sol qui défile, calé sur les pieds (vitesses données par la DA, en hauteurs par seconde)
+    const vit = { course: 0.82, panique: 1.2 }[id];
+    if (vit) { const hh = H * 0.62, off = ((t * vit * hh) % 40 + 40) % 40; g.strokeStyle = 'rgba(31,42,68,.35)'; g.lineWidth = 2;
+      g.beginPath(); for (let x = -40; x < W + 40; x += 40) { const xx = x - dir * off; g.moveTo(xx, foot + 4); g.lineTo(xx - 14, H); } g.stroke(); }
     // battement : petit carré qui s'allume sur chaque temps
     if (id === 'tambour') { const f = (t / (60 / 102)) % 1; g.fillStyle = f < 0.12 ? '#e0a82e' : 'rgba(31,42,68,.2)'; g.fillRect(12, 12, 18, 18); }
     try {
