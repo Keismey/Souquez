@@ -39,7 +39,7 @@ for (const [id, set] of [['zones', () => zones = !zones], ['crew', () => crew = 
 // Qui se tient à chaque poste (correspondance poste → personnage proposée par la Programmation)
 const EQUIPE = { pont: ['hortense', 'matelot'], proue: ['matelot'], canons: ['pepin', 'matelot'], machines: ['gaston', 'bouillon'] };
 const TAILLE = { pepin: 60, matelot: 90, hortense: 110, gaston: 95, bouillon: 100 };
-const X0 = 140, Y0 = 160; // place du navire à l'écran (coin de l'image brute)
+const X0 = 230, Y0 = 230; // place du navire à l'écran (coin de l'image brute)
 
 function frame(ts) {
   const t = ts / 1000, b = t / BEAT, f = b - Math.floor(b);
@@ -55,7 +55,7 @@ function frame(ts) {
     const P = NAVIRE.postes(N, zone, X0, Y0 + Math.sin(t * 1.6) * 3, s);
     noms.forEach((nom, i) => { const p = P.pts[i % P.pts.length]; if (!p) return;
       const etat = pan ? 'panique' : (EQUIPAGE.poste && EQUIPAGE.poste[nom]) || 'tambour';
-      EQUIPAGE.draw(g, nom, p[0], p[1], TAILLE[nom], etat, t, 1, i); });
+      EQUIPAGE.draw(g, nom, p[0], p[1], TAILLE[nom] * P.haut / 130, etat, t, 1, i); }); // tailles de la charte pour des ponts de 130 px, à l'échelle
   }
   if (zones) {
     g.lineWidth = 2; g.font = 'bold 14px system-ui';

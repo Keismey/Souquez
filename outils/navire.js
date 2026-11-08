@@ -3,7 +3,7 @@
 //
 // Fichier de données (navire.json), coordonnées en pixels de l'image de la coque (image Gemini brute, marges magenta comprises) :
 // {
-//   "coque": { "img": "grondeuse_coupe.png", "largeur": 1000 },          // largeur du navire à l'écran de référence 1280×720 (px)
+//   "coque": { "img": "grondeuse_coupe.png", "largeur": 750 },           // largeur du navire à l'écran de référence 1280×720 (px) ; 750 = choix du directeur (ponts ~100 px)
 //   "ponts": {                                                           // sol (y), plafond (haut) et étendue (x0, x1) de chaque zone
 //     "pont":     { "sol": 300, "haut": 120, "x0": 300, "x1": 900, "postes": [420, 520, 620] },
 //     "proue":    { ... }, "canons": { ... }, "machines": { ... }

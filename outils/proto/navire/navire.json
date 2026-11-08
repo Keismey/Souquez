@@ -1,6 +1,6 @@
 {
  "nom": "Grondeuse (FACTICE pour tester le moteur)",
- "coque": { "img": "grondeuse_coupe.png", "largeur": 1000 },
+ "coque": { "img": "grondeuse_coupe.png", "largeur": 750 },
  "ponts": {
   "pont":     { "sol": 330, "haut": 79,  "x0": 200,  "x1": 1000, "postes": [380, 560, 900] },
   "proue":    { "sol": 330, "haut": 79,  "x0": 1050, "x1": 1900, "postes": [1250, 1500, 1750] },
