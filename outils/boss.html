@@ -30,7 +30,7 @@
       [/C\(sky\); cx\.fillRect\(0, 0, VW, 400\);/, 'C(sky); cx.fillRect(0, -400, VW, 800);'],
     ],
   };
-  const scripts = [...html.matchAll(new RegExp('<' + 'script src="([^"]+)"><' + '/script>', 'g'))].map((m) => m[1]).concat(['outils/proto/mers.js', 'outils/proto/boss.js', 'outils/proto/boucle.js']);
+  const scripts = [...html.matchAll(new RegExp('<' + 'script src="([^"]+)"><' + '/script>', 'g'))].map((m) => m[1]).concat(['outils/proto/mers.js', 'outils/proto/boss.js', 'outils/proto/monstres.js', 'outils/proto/monstres-jeu.js', 'outils/proto/boucle.js']);
   for (const src of scripts) {
     const s = document.createElement('script');
     if (PATCH[src]) {

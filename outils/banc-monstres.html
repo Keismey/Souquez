@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc d'essai monstres</title>
+<style>
+:root { --bg: #13302b; --txt: #f2e6cc; --muted: #a9bdb4; --acc: #e0a82e; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 15px/1.4 system-ui, sans-serif; }
+header { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+h1 { font-size: 18px; margin: 0 10px 0 0; }
+button, select { background: #2f5a52; color: var(--txt); border: 0; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
+button.on { background: var(--acc); color: #1f2a44; }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+#cv { display: block; width: calc(100% - 32px); margin: 0 16px; aspect-ratio: 16 / 9; border-radius: 10px; background: #f2e6cc; }
+#info { color: var(--muted); font-size: 13px; padding: 6px 16px; margin: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Banc d'essai monstres</h1>
+  <select id="set" aria-label="Monstres affichés"><option value="mer">Mer 1 : Sardine, Crache-Boulons, Bernard</option><option value="boss">Tonton Homard (106 BPM)</option></select>
+  <button id="boucle" class="on">Annonce puis coup</button>
+  <button id="touche">Touché</button>
+  <button id="coule">Coulé</button>
+  <button id="crew" class="on">Équipage</button>
+</header>
+<canvas id="cv" width="1280" height="720"></canvas>
+<p id="info">Écran de référence 1280 × 720, navire v3 à 750 px. Tailles de la DA : Sardine 50 px, Crache-Boulons 60, Bernard 75, Tonton Homard 190. Ils regardent le navire. Annonce sur 2 temps, coup sur le 3e, un temps de repos (le boss : 10 temps d'annonce).</p>
+<script src="navire.js"></script>
+<script src="proto/equipage.js"></script>
+<script src="proto/monstres.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id), cv = $('cv'), g = cv.getContext('2d');
+const TAILLE = { sardine: 50, cracheur: 60, bernard: 75, homard: 190 };
+const SETS = { mer: [['sardine', 880], ['cracheur', 1000], ['bernard', 1140]], boss: [['homard', 1060]] };
+const EQUIPE = { pont: ['hortense'], canons: ['pepin', 'matelot', 'matelot'], machines: ['gaston', 'bouillon'] };
+const TAILLE_EQ = { pepin: 35, matelot: 48, hortense: 64, gaston: 55, bouillon: 58 };
+const X0 = 20, Y0 = 285, MER = 560; // navire à gauche ; ligne de flottaison des monstres
+let N = null, boucle = true, crew = true, touche = -9, coule = Infinity;
+$('boucle').onclick = () => { boucle = !boucle; $('boucle').classList.toggle('on', boucle); };
+$('crew').onclick = () => { crew = !crew; $('crew').classList.toggle('on', crew); };
+$('touche').onclick = () => { touche = performance.now() / 1000; };
+$('coule').onclick = () => { coule = performance.now() / 1000; };
+$('set').onchange = () => { coule = Infinity; };
+
+function frame(ts) {
+  const t = ts / 1000, boss = $('set').value === 'boss', beat = 60 / (boss ? 106 : 102), b = t / beat;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = '#f2e6cc'; g.fillRect(0, 0, 1280, 720);
+  if (N) {
+    const y = Y0 + Math.sin(t * 1.6) * 3;
+    NAVIRE.draw(g, N, X0, y, 1, { roue: t * 1.2, piston: b * Math.PI, coque: 1 });
+    if (crew && typeof EQUIPAGE !== 'undefined') for (const [zone, noms] of Object.entries(EQUIPE)) {
+      const P = NAVIRE.postes(N, zone, X0, y, 1);
+      noms.forEach((nom, i) => { const p = P.pts[i % P.pts.length]; if (p) EQUIPAGE.draw(g, nom, p[0], p[1], TAILLE_EQ[nom], 'repos', t, 1, i); });
+    }
+  }
+  // Cycle : mer 1 = 4 temps (annonce 2, coup au 3e, repos) ; boss = 12 temps (annonce 10, coup, repos)
+  const n = boss ? 12 : 4, tel = boss ? 10 : 2, k = b % n;
+  const prepare = boucle ? (k < tel ? k / tel : 0) : 0, attaque = boucle && k >= tel && k < tel + 1 ? k - tel : 0;
+  if (t - coule > 2.5) coule = Infinity; // il réapparaît après avoir coulé
+  const tc = Math.max(0, 1 - (t - touche) * 2.5), cl = Math.min(1, Math.max(0, (t - coule) / 1.2));
+  for (const [nom, x] of SETS[boss ? 'boss' : 'mer']) {
+    const etat = { prepare, attaque, touche: tc, coule: cl };
+    if (nom === 'homard') Object.assign(etat, { jet: 0, double: 0, colere: 0 });
+    MONSTRES.draw(g, nom, x, MER, TAILLE[nom], t, -1, x * 0.01, etat);
+  }
+  g.textAlign = 'left';
+  // Mer devant (cache le bas des corps, comme dans le jeu)
+  g.fillStyle = 'rgba(28,62,86,.85)'; g.fillRect(0, MER + 8, 1280, 720);
+  g.fillStyle = '#f2e6cc'; g.font = 'bold 13px system-ui'; g.textAlign = 'center';
+  for (const [nom, x] of SETS[boss ? 'boss' : 'mer']) { g.fillText(MONSTRES.titres[nom], x, MER + 40); g.fillText(TAILLE[nom] + ' px', x, MER + 58); }
+  g.textAlign = 'left';
+  requestAnimationFrame(frame);
+}
+NAVIRE.load('proto/navire/navire.json').then((n) => { N = n; if (!n) $('info').textContent = 'Navire introuvable.'; });
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
