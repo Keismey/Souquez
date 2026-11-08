@@ -37,7 +37,7 @@ const $ = (id) => document.getElementById(id), cv = $('cv'), g = cv.getContext('
 const TAILLE = { sardine: 50, cracheur: 60, bernard: 75, homard: 190 };
 const SETS = { mer: [['sardine', 880], ['cracheur', 1000], ['bernard', 1140]], boss: [['homard', 1060]] };
 const EQUIPE = { pont: ['hortense'], canons: ['pepin', 'matelot', 'matelot'], machines: ['gaston', 'bouillon'] };
-const TAILLE_EQ = { pepin: 35, matelot: 48, hortense: 64, gaston: 55, bouillon: 58 };
+const TAILLE_EQ = { pepin: 35, matelot: 46, hortense: 64, gaston: 55, bouillon: 58 };
 const X0 = 20, Y0 = 285, MER = 560; // navire à gauche ; ligne de flottaison des monstres
 let N = null, boucle = true, crew = true, touche = -9, coule = Infinity;
 $('boucle').onclick = () => { boucle = !boucle; $('boucle').classList.toggle('on', boucle); };
