@@ -178,7 +178,7 @@ function onBeatVisual(k) {
   for (const e of G.mons) {
     if (e.hp <= 0 || e.x - G.ship.x > e.reach) continue;
     if (e.nextAtk == null) e.nextAtk = k + FIRST;
-    if (k === e.nextAtk - TELE) { e.tele = 1; if (e.dmg >= WARN_DMG) { hint(t('incoming')); G.hintHold = k + 2; } }
+    if (k === e.nextAtk - TELE) { e.tele = 1; crewPanic(); if (e.dmg >= WARN_DMG) { hint(t('incoming')); G.hintHold = k + 2; } }
     if (k === e.nextAtk) {
       e.tele = 0; e.nextAtk = k + e.every;
       G.shots.push({ mon: true, spit: !!e.spitter, x0: e.x - 34 * e.size, y0: SEA - 70 * e.size, x1: G.ship.x + 70, y1: SEA - 40, t: 0, dur: e.shotDur, dmg: e.dmg });
@@ -288,7 +288,7 @@ function update(dt) {
     if (s.mon) {
       const block = guarded(G.curBeat);
       const dmg = block ? s.dmg * SHIP.guard : s.dmg;
-      sh.hp = Math.max(0, sh.hp - dmg); sh.hurt = 1; G.shake = block ? 0.3 : 1;
+      sh.hp = Math.max(0, sh.hp - dmg); sh.hurt = 1; crewPanic(); G.shake = block ? 0.3 : 1;
       G.puffs.push({ x: s.x1, y: s.y1, t: 0, big: !block, blue: block });
       if (block) { banner(t('blocked')); cheer(ctx.currentTime + 0.1, false); } else { vibrate(40); groan(ctx.currentTime + 0.05); }
       if (sh.hp <= 0) sinkShip();
@@ -312,22 +312,26 @@ const ZONES = { machines: { y: 22, x0: -112, x1: 84 }, canons: { y: -6, x0: 6, x
 const ORDER_ZONE = { ADV: 'machines', ATK: 'canons', DEF: 'proue', HEAL: 'pont' };
 const FIXED = [[-82, 22, 'machines'], [36, -6, 'canons'], [-120, -42, 'pont'], [146, -42, 'proue']];
 const LADDER = -56;
-function newCrew() { return Array.from({ length: 6 }, (_, i) => ({ x: -118 + i * 17, y: -6, tx: -118 + i * 17, ty: -6, panic: 0, ph: i * 1.3, zone: null })); }
+function newCrew() { return Array.from({ length: 6 }, (_, i) => ({ x: -118 + i * 17, y: -6, tx: -118 + i * 17, ty: -6, panic: 0, ph: i * 1.3, zone: null, dir: 1 })); }
+// Panique (décision du directeur) : à l'annonce d'une attaque de monstre et quand la coque est touchée.
+// panic part de 1 : bras levés tant que panic > 0,2 (0,8 s), sur place tant que panic > 0,6 (0,4 s).
+function crewPanic() { if (G && G.crew) for (const r of G.crew) r.panic = 1; }
 function orderCrew(cmd) {
   const z = ZONES[ORDER_ZONE[cmd]], zn = ORDER_ZONE[cmd];
   G.crew.forEach((r, i) => {
-    if (r.zone === zn && r.y === z.y) { r.panic = 1.3; return; } // déjà sur place : lève quand même les bras
-    r.tx = lerp(z.x0, z.x1, (i + 0.5) / G.crew.length) + (Math.random() - 0.5) * 10; r.ty = z.y; r.panic = 1.3; r.zone = zn;
+    if (r.zone === zn && r.y === z.y) return; // déjà sur place
+    r.tx = lerp(z.x0, z.x1, (i + 0.5) / G.crew.length) + (Math.random() - 0.5) * 10; r.ty = z.y; r.zone = zn;
   });
 }
 function updateCrew(dt) {
   const v = 230 * dt;
   for (const r of G.crew) {
     r.panic = Math.max(0, r.panic - dt);
-    if (r.panic > 0.9) continue; // pose d'alerte 0,4 s (bras levés) avant de courir
-    const step = (a, b) => Math.abs(b - a) <= v ? b : a + Math.sign(b - a) * v;
+    if (r.panic > 0.6) continue; // sursaut sur place avant de repartir
+    const step = (a, b) => Math.abs(b - a) <= v ? b : a + Math.sign(b - a) * v, x0 = r.x;
     if (r.y !== r.ty) { if (r.x !== LADDER) r.x = step(r.x, LADDER); else r.y = step(r.y, r.ty); }
     else r.x = step(r.x, r.tx);
+    if (r.x !== x0) r.dir = r.x > x0 ? 1 : -1; // garde le sens de sa marche en arrivant
   }
 }
 // Pas de game over : coque à zéro, le navire rentre au port réparé, les monstres gardent leurs dégâts

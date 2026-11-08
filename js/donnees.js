@@ -1,6 +1,6 @@
 // Souquez ! : données de jeu (aucune logique ici). Les scripts partagent la portée globale, chargés dans l'ordre de index.html.
 'use strict';
-const VERSION = '0.11.1';
+const VERSION = '0.11.2';
 const GAME_NAME = 'Souquez !';
 const SAVE_KEY = 'koa.save';
 

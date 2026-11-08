@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Carte de la mer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* Prototype hors du jeu : écran carte d'une mer (palette de la charte) */
+:root { --marine: #1F2A44; --ardoise: #3C4D6B; --brique: #B5452F; --creme: #F2E6CC; --sable: #D9C9A6; --moutarde: #E0A82E; --vert: #7FA89A; --beat: 0.588s; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--marine); color: var(--creme); font: 600 15px/1.35 Nunito, system-ui, sans-serif; }
+#app { position: relative; height: 100%; display: flex; flex-direction: column; }
+.top { display: flex; align-items: center; gap: 10px; padding: 10px 16px; padding-left: max(16px, env(safe-area-inset-left)); }
+.top h1 { font: 800 clamp(18px, 3.4vh, 26px) Grandstander, sans-serif; margin: 0; flex: 1; }
+.btn { font: 800 15px Nunito, sans-serif; border: 2px solid var(--marine); border-radius: 12px; padding: 8px 14px; background: var(--creme); color: var(--marine); cursor: pointer; }
+.btn.alt { background: var(--ardoise); color: var(--creme); border-color: var(--creme); }
+.btn:focus-visible, .bouee:focus-visible { outline: 3px solid var(--moutarde); outline-offset: 3px; }
+.total { display: flex; align-items: center; gap: 6px; font-weight: 800; }
+.carte { position: relative; flex: 1; margin: 0 16px 16px; border-radius: 16px; overflow: hidden; background: var(--vert); border: 3px solid var(--marine); }
+.carte svg.fond { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bouee { position: absolute; transform: translate(-50%, -50%); width: clamp(54px, 13vh, 84px); aspect-ratio: 1; border-radius: 50%; border: 3px solid var(--marine);
+  background: var(--creme); color: var(--marine); cursor: pointer; display: grid; place-items: center; padding: 0; font: 800 clamp(18px, 4vh, 26px) Grandstander, sans-serif; }
+.bouee.boss { width: clamp(68px, 17vh, 104px); background: var(--brique); color: var(--creme); }
+.bouee.ferme { background: var(--sable); color: var(--ardoise); filter: grayscale(.6); cursor: default; }
+.bouee .cad { width: 40%; }
+.bouee.prochaine { animation: pulse var(--beat) ease-out infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(224,168,46,.9); transform: translate(-50%, -50%) scale(1.08); } 70% { box-shadow: 0 0 0 14px rgba(224,168,46,0); transform: translate(-50%, -50%) scale(1); } 100% { box-shadow: 0 0 0 0 rgba(224,168,46,0); } }
+@media (prefers-reduced-motion: reduce) { .bouee.prochaine { animation: none; box-shadow: 0 0 0 5px var(--moutarde); } }
+.etiq { position: absolute; transform: translate(-50%, 0); text-align: center; pointer-events: none; white-space: nowrap; }
+.etiq b { display: block; font: 800 clamp(12px, 2.6vh, 15px) Nunito, sans-serif; color: var(--marine); background: rgba(242,230,204,.85); border-radius: 8px; padding: 1px 6px; }
+.etoiles { display: inline-flex; gap: 2px; margin-top: 2px; }
+.etoile { width: clamp(13px, 3vh, 18px); }
+.fiche { position: absolute; inset: 0; z-index: 5; background: rgba(15,22,38,.72); display: grid; place-items: center; padding: 16px; }
+.fiche[hidden] { display: none; }
+.fiche .box { width: min(560px, 100%); max-height: 100%; overflow: auto; background: var(--creme); color: var(--marine); border: 3px solid var(--marine); border-radius: 16px; padding: 14px 18px; }
+.fiche h2 { font: 800 22px Grandstander, sans-serif; margin: 0 0 4px; }
+.fiche dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 8px 0 12px; }
+.fiche dt { color: var(--ardoise); }
+.fiche dd { margin: 0; font-weight: 800; }
+.fiche .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.demo { font: 700 13px Nunito, sans-serif; background: var(--ardoise); color: var(--creme); border: 2px solid var(--creme); border-radius: 10px; padding: 6px 8px; }
+@media (max-height: 420px) { .top { padding: 6px 16px; } .carte { margin: 0 16px 8px; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <button class="btn alt" id="retour" data-t="retour"></button>
+    <h1 id="titre"></h1>
+    <div class="total" aria-live="polite"><span id="total"></span></div>
+    <select class="demo" id="demo" aria-label="Démo du prototype"><option value="">Démo…</option><option value="0">Nouveau joueur</option><option value="1">2 missions faites</option><option value="2">Tout à 3 ★</option></select>
+    <button class="btn alt" id="lang">EN</button>
+  </div>
+  <div class="carte" id="carte">
+    <svg class="fond" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" id="route"></svg>
+    <div class="fiche" id="fiche" hidden role="dialog" aria-modal="true" aria-labelledby="fNom">
+      <div class="box">
+        <h2 id="fNom"></h2>
+        <div class="etoiles" id="fEt"></div>
+        <dl id="fInfo"></dl>
+        <div class="row"><button class="btn alt" id="fFermer" data-t="fermer"></button><button class="btn" id="fJouer" data-t="jouer"></button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="proto/mers.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const TXT = {
+  fr: { retour: '← Mers', fermer: 'Fermer', jouer: 'Larguer les amarres', objectif: 'Objectif', port: (x) => 'Atteindre la bouée à ' + x.toLocaleString('fr-FR'), boss: 'Vaincre ', ordre: 'Ordre appris', aucun: '—', ref: 'Temps de référence', best: 'Meilleur temps', coque: 'Meilleure coque', butin: 'Butin de base', jamais: 'pas encore joué', tempo: 'Tempo', ferme: 'Mission verrouillée', joue: (n) => 'Mission lancée : ' + n + ' (prototype, pas de partie ici)',
+    ADV: 'Avancer', ATK: 'Attaquer', DEF: 'Protéger', HEAL: 'Soigner' },
+  en: { retour: '← Seas', fermer: 'Close', jouer: 'Cast off', objectif: 'Goal', port: (x) => 'Reach the buoy at ' + x.toLocaleString('en-GB'), boss: 'Defeat ', ordre: 'New order', aucun: '—', ref: 'Target time', best: 'Best time', coque: 'Best hull', butin: 'Base loot', jamais: 'not played yet', tempo: 'Tempo', ferme: 'Locked mission', joue: (n) => 'Mission started: ' + n + ' (prototype, no game here)',
+    ADV: 'Advance', ATK: 'Attack', DEF: 'Protect', HEAL: 'Heal' },
+};
+let lang = 'fr';
+const t = (k) => TXT[lang][k];
+const MER = MERS[0];
+// Sauvegarde du prototype (clé séparée du jeu) : progres[id] = { etoiles, temps, coque }
+let progres = {};
+try { progres = JSON.parse(localStorage.getItem('souquez.proto.carte')) || {}; } catch (_) {}
+const garde = () => { try { localStorage.setItem('souquez.proto.carte', JSON.stringify(progres)); } catch (_) {} };
+
+// Déblocage : la 1re est ouverte ; arriver au port (1 étoile ou plus) ouvre la suivante
+const ouverte = (i) => i === 0 || (progres[MER.missions[i - 1].id]?.etoiles || 0) >= 1;
+const prochaine = () => MER.missions.findIndex((m, i) => ouverte(i) && !(progres[m.id]?.etoiles >= 1));
+
+const ETOILE = (on) => `<svg class="etoile" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" fill="${on ? 'var(--moutarde)' : 'rgba(31,42,68,.25)'}" stroke="var(--marine)" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+const CADENAS = '<svg class="cad" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>';
+const temps = (s) => s == null ? t('jamais') : Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+
+function rendu() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-t]').forEach((e) => e.textContent = t(e.dataset.t));
+  $('lang').textContent = lang === 'fr' ? 'EN' : 'FR';
+  $('titre').textContent = MER.nom[lang];
+  const tot = MER.missions.reduce((a, m) => a + (progres[m.id]?.etoiles || 0), 0);
+  $('total').innerHTML = ETOILE(true) + ' ' + tot + ' / ' + MER.missions.length * 3;
+  // Route en pointillés entre les bouées
+  const pts = MER.missions.map((m) => m.carte);
+  $('route').innerHTML = '<path d="M' + pts.map((p) => p.join(' ')).join(' L') + '" fill="none" stroke="#F2E6CC" stroke-width="0.9" stroke-dasharray="2 1.6" vector-effect="non-scaling-stroke" style="stroke-width:5px"/>';
+  document.querySelectorAll('.bouee, .etiq').forEach((e) => e.remove());
+  const nx = prochaine();
+  MER.missions.forEach((m, i) => {
+    const b = document.createElement('button'), ok = ouverte(i), et = progres[m.id]?.etoiles || 0;
+    b.className = 'bouee' + (m.boss ? ' boss' : '') + (ok ? '' : ' ferme') + (i === nx ? ' prochaine' : '');
+    b.style.left = m.carte[0] + '%'; b.style.top = m.carte[1] + '%';
+    b.innerHTML = ok ? (m.boss ? '☠' : String(i + 1)) : CADENAS;
+    b.setAttribute('aria-label', m.nom[lang] + (ok ? ', ' + et + ' / 3' : ', ' + t('ferme')));
+    if (ok) b.onclick = () => fiche(m, i); else b.setAttribute('aria-disabled', 'true');
+    const e = document.createElement('div'); e.className = 'etiq';
+    e.style.left = m.carte[0] + '%'; e.style.top = 'calc(' + m.carte[1] + '% + ' + (m.boss ? 'clamp(36px, 9vh, 54px)' : 'clamp(29px, 7vh, 44px)') + ')';
+    e.innerHTML = '<b>' + m.nom[lang] + '</b>' + (ok ? '<span class="etoiles">' + [0, 1, 2].map((k) => ETOILE(k < et)).join('') + '</span>' : '');
+    $('carte').append(b, e);
+  });
+}
+let dernier = null;
+function fiche(m, i) {
+  dernier = document.activeElement;
+  const p = progres[m.id] || {};
+  $('fNom').textContent = (m.boss ? '' : (i + 1) + '. ') + m.nom[lang];
+  $('fEt').innerHTML = [0, 1, 2].map((k) => ETOILE(k < (p.etoiles || 0))).join('');
+  const rows = [
+    [t('objectif'), m.boss ? t('boss') + m.nom[lang] : t('port')(m.portX)],
+    [t('ordre'), m.ordre.length ? m.ordre.map((o) => t(o)).join(', ') : t('aucun')],
+    ...(m.boss ? [[t('tempo'), m.bpm + ' BPM']] : []),
+    [t('ref'), temps(m.ref)], [t('best'), temps(p.temps)], [t('coque'), p.coque == null ? t('jamais') : p.coque + ' / 20'], [t('butin'), m.butin + ' ⚙'],
+  ];
+  $('fInfo').innerHTML = rows.map(([k, v]) => '<dt>' + k + '</dt><dd>' + v + '</dd>').join('');
+  $('fJouer').onclick = () => { fermer(); $('total').title = t('joue')(m.nom[lang]); console.log(t('joue')(m.nom[lang])); };
+  $('fiche').hidden = false; $('fJouer').focus();
+}
+function fermer() { $('fiche').hidden = true; if (dernier) dernier.focus(); }
+$('fFermer').onclick = fermer;
+$('fiche').onclick = (e) => { if (e.target === $('fiche')) fermer(); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('fiche').hidden) fermer(); });
+$('lang').onclick = () => { lang = lang === 'fr' ? 'en' : 'fr'; rendu(); };
+$('retour').onclick = () => {};
+// Démo : états de progression
+const DEMOS = [{}, { m1: { etoiles: 3, temps: 68, coque: 18 }, m2: { etoiles: 1, temps: 131, coque: 6 } }, Object.fromEntries(MER.missions.map((m) => [m.id, { etoiles: 3, temps: m.ref - 9, coque: 17 }]))];
+$('demo').onchange = (e) => { if (e.target.value === '') return; progres = DEMOS[+e.target.value]; garde(); rendu(); e.target.value = ''; };
+rendu();
+</script>
+</body>
+</html>
