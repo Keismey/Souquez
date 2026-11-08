@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc d'écoute audio</title>
+<style>
+:root { --bg: #13302b; --panel: #1c3f39; --txt: #f2e6cc; --muted: #a9bdb4; --acc: #e0a82e; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 15px/1.45 system-ui, sans-serif; }
+header { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+h1 { font-size: 18px; margin: 0 10px 0 0; }
+h2 { font-size: 16px; margin: 18px 16px 8px; color: var(--acc); }
+button, select, input[type=text] { background: #2f5a52; color: var(--txt); border: 0; border-radius: 8px; padding: 10px 14px; font-weight: 700; font-size: 15px; min-height: 44px; }
+button:active { background: var(--acc); color: #1f2a44; }
+button.on { background: var(--acc); color: #1f2a44; }
+input[type=text] { font-weight: 400; flex: 1 1 200px; min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; padding: 0 16px; }
+.carte { background: var(--panel); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.carte b { font-size: 16px; }
+.carte p { margin: 0; color: var(--muted); font-size: 13px; }
+.ligne { display: flex; flex-wrap: wrap; gap: 8px; }
+.dit { font-style: italic; min-height: 1.4em; font-size: 14px; }
+.note { padding: 0 16px; color: var(--muted); font-size: 13px; max-width: 760px; }
+#err { color: #ff8f7a; padding: 0 16px; white-space: pre-wrap; }
+footer { padding: 24px 16px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Banc d'écoute audio</h1>
+  <select id="langue"><option value="fr">Répliques en français</option><option value="en">Lines in English</option></select>
+  <label>Volume <input id="vol" type="range" min="0" max="100" value="90"></label>
+</header>
+<p class="note">Page de test hors du jeu : rien n'est encore intégré. Monte le son du téléphone (et coupe le mode silencieux sur iPhone). Les voix ne disent pas de vrais mots : elles suivent les voyelles et la ponctuation de la réplique.</p>
+<div id="err"></div>
+
+<h2>Voix de l'équipage</h2>
+<div class="grid" id="voix"></div>
+
+<h2>Jingles</h2>
+<div class="grid">
+  <div class="carte"><b>Victoire</b><p>Fanfare montante, arrivée au port.</p><div class="ligne"><button data-j="victoire">Écouter</button><button id="vicFoule">Avec la foule du jeu</button></div></div>
+  <div class="carte"><b>Défaite</b><p>Trombone bouché qui descend : drôle, pas cruel (pas de game over).</p><div class="ligne"><button data-j="defaite">Écouter</button></div></div>
+  <div class="carte"><b>Étoile gagnée</b><p>Un cran plus haut à chaque étoile.</p><div class="ligne"><button data-e="1">★</button><button data-e="2">★★</button><button data-e="3">★★★</button><button id="trois">Écran de fin 3 étoiles</button></div></div>
+</div>
+
+<h2>Repères (sons déjà dans le jeu)</h2>
+<div class="grid"><div class="carte"><b>Pour comparer les volumes</b><div class="ligne"><button id="pads">BOUM TAK BOUM TAK</button><button id="choeur">Chœur actuel</button></div></div></div>
+
+<footer>Fichier testé : outils/proto/voix.js (fonctions parler et jingle). Il ira dans le jeu après ton feu vert.</footer>
+
+<script>
+'use strict';
+// Le moteur audio du jeu attend ces réglages (normalement fournis par la sauvegarde et la partie)
+var save = { music: 80, sfx: 90, voices: true, vib: false };
+var G = null;
+window.addEventListener('error', (e) => { document.getElementById('err').textContent += e.message + '\n'; });
+</script>
+<script src="../js/donnees.js"></script>
+<script src="../js/audio.js"></script>
+<script src="../js/dialogues.js"></script>
+<script src="proto/voix.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const FICHES = [
+  ['hortense', 'Hortense, la Bosco', 'Grave et sèche : syllabes hachées, phrase qui retombe.', 'Encore une baleine. Retourne frotter le pont.'],
+  ['gaston', 'Gaston Piston', 'Aigu et enthousiaste : rapide, ça monte, ça vibre.', 'Chaudières chaudes ! On attend vos ordres, Capitaine !'],
+  ['doc', 'Doc Bouillon', 'Chaleureuse : ronde, posée, douce.', 'Le Vieux est touché ! Faites de la place !'],
+  ['pepin', 'Pépin, le mousse', 'Petite voix : très aiguë, tremblante, hésite.', "Pépin a vu un truc dans l'eau. Un gros truc."],
+  ['vieux', 'Le Vieux (bonus)', 'Ancien capitaine : grave, usé, beaucoup de souffle.', 'Bats, Capitaine. Ils comprendront.']
+];
+function son() { initAudio(); sfxBus.gain.value = $('vol').value / 100; if (ctx.state === 'suspended') ctx.resume(); return ctx.currentTime + 0.06; }
+$('vol').oninput = () => { if (ctx) sfxBus.gain.value = $('vol').value / 100; };
+// Toutes les répliques des dialogues, par personnage
+function repliques(qui) {
+  const l = $('langue').value, out = [];
+  for (const sc of Object.values(DIALOGUES)) for (const b of sc) if (b.qui === qui) out.push(b[l]);
+  return out;
+}
+const tirage = {};
+for (const [qui, nom, desc, ex] of FICHES) {
+  const c = document.createElement('div'); c.className = 'carte';
+  c.innerHTML = `<b>${nom}</b><p>${desc}</p><div class="dit"></div><div class="ligne"><button class="r">Réplique suivante</button><button class="x">Exemple</button></div><div class="ligne"><input type="text" placeholder="Écris une réplique…"><button class="t">Dire</button></div>`;
+  const dit = c.querySelector('.dit'), inp = c.querySelector('input');
+  const dire = (txt) => { if (!txt) return; dit.textContent = '« ' + txt + ' »'; parler(qui, txt, son()); };
+  c.querySelector('.x').onclick = () => dire(ex);
+  c.querySelector('.r').onclick = () => { const r = repliques(qui); if (!r.length) return dire(ex); tirage[qui] = ((tirage[qui] ?? -1) + 1) % r.length; dire(r[tirage[qui]]); };
+  c.querySelector('.t').onclick = () => dire(inp.value.trim());
+  inp.onkeydown = (e) => { if (e.key === 'Enter') dire(inp.value.trim()); };
+  $('voix').appendChild(c);
+}
+document.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => jingle(b.dataset.j, son()));
+document.querySelectorAll('[data-e]').forEach((b) => b.onclick = () => jingle('etoile', son(), +b.dataset.e));
+$('vicFoule').onclick = () => { const at = son(); const d = jingle('victoire', at); cheer(at + 0.2, true); cheer(at + 1.1, true); };
+$('trois').onclick = () => { let at = son(); at += jingle('victoire', at) + 0.15; for (let n = 1; n <= 3; n++) { jingle('etoile', at, n); at += 0.55; } };
+$('pads').onclick = () => { const at = son(), s = 60 / 102; ['BOUM', 'TAK', 'BOUM', 'TAK'].forEach((p, i) => playPad(p, at + i * s)); };
+$('choeur').onclick = () => { const at = son(); cheer(at, false); groan(at + 1.2); };
+</script>
+</body>
+</html>
