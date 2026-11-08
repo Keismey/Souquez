@@ -188,7 +188,7 @@ function onBeatVisual(k) {
   if (!inResp(k)) return;
   const c = G.resp.cmd, rb = k - G.resp.k0, foe = aliveEnemy();
   if (c === 'ADV') {
-    G.ship.tx = Math.min(G.ship.tx + SHIP.advance, foe ? foe.x - STOP : LEVEL.portX - 280);
+    G.ship.tx = Math.min(G.ship.tx + SHIP.advance * (G.resp.full ? POWER.advMult : 1), foe ? foe.x - STOP : LEVEL.portX - 280);
   } else if (c === 'ATK' && (rb === 1 || rb === 3)) {
     const bonus = rb === 3 && G.resp.q >= 0.75 ? SHIP.perfectBonus : 0;
     const reach = foe && foe.x - G.ship.x <= RANGE;

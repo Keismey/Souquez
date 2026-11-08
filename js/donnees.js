@@ -1,6 +1,6 @@
 // Souquez ! : données de jeu (aucune logique ici). Les scripts partagent la portée globale, chargés dans l'ordre de index.html.
 'use strict';
-const VERSION = '0.9.1';
+const VERSION = '0.9.2';
 const GAME_NAME = 'Souquez !';
 const SAVE_KEY = 'koa.save';
 
@@ -35,7 +35,8 @@ const SHIP = {
 // Pleine puissance : 4 crans, +1 par commande réussie. Une erreur (fausse note, note oubliée, rythme cassé)
 // coûte « penalty » crans : 2 par défaut (option A), 0 = retour à zéro (option B).
 // Essai en cours (8 nov.) : ?penalite=0 dans l'adresse pour tester l'option B. À retirer une fois tranché.
-const POWER = { steps: 4, mult: 1.5, penalty: 2 };
+// advMult : en pleine puissance, Avancer va 1,5 fois plus loin (essai du 8 nov.).
+const POWER = { steps: 4, mult: 1.5, advMult: 1.5, penalty: 2 };
 try { if (new URLSearchParams(location.search).get('penalite') === '0') POWER.penalty = 0; } catch (_) {}
 // Conseil « protège-toi » : seulement avant un coup d'au moins WARN_DMG dégâts (le Cogneur).
 const WARN_DMG = 3;
@@ -56,8 +57,8 @@ const LEVEL = {
     { type: 'cogneur', x: 2500 },
   ],
 };
-// Étoiles : 1 = arriver au port ; +1 si coque ≥ 50 % ; +1 si fini en 2 min 45 ou moins. Coque cédée = 0 étoile.
-const STARS = { hullRatio: 0.5, refTime: 165 };
+// Étoiles : 1 = arriver au port ; +1 si coque ≥ 50 % ; +1 si fini en STARS.refTime secondes ou moins. Coque cédée = 0 étoile.
+const STARS = { hullRatio: 0.5, refTime: 140 }; // 2 min 20 (essai du 8 nov., avant : 165)
 const CAL_END = 16; // 4 temps de décompte + 12 temps de calibrage
 
 // Musique : boucle de 32 mesures à 102 BPM ; le premier temps tombe à MUS_OFF secondes dans le fichier.
