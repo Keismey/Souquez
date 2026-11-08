@@ -5,11 +5,11 @@
 //   Sardines appelées : à ~280 devant le navire, stats habituelles (1re attaque 10 temps après l'apparition). Jet de vapeur : phase 2 seulement.
 //   Phase 2 (25 → 12) : la pince continue ; 2 Sardines-à-Vapeur appelées une fois, devant lui (elles le protègent) ;
 //                        jet de vapeur 1 dégât tous les 12 temps, non annoncé.
-//   Phase 3 (12 → 0)  : double pince, 2 coups de 5 à 4 temps d'écart, tous les 24 temps, annoncée 10 temps avant
+//   Phase 3 (12 → 0)  : double pince, 2 coups de 5 à 2 temps d’écart, tous les 24 temps, annoncée 10 temps avant
 //                        (un seul Protéger bien placé couvre les deux).
 //   Coque cédée : le combat se relance tout de suite. Fin : le homard lâche la plaque gravée.
 'use strict';
-const BOSS = { tele: 10, every: 24, pince: 6, double: 5, ecart: 4, jet: 1, jetEvery: 12, premier: 28, zoom: 0.84 };
+const BOSS = { tele: 10, every: 24, pince: 6, double: 5, ecart: 2, jet: 1, jetEvery: 12, premier: 28, zoom: 0.84 };
 MONSTERS.homard = { hp: 40, dmg: BOSS.pince, every: BOSS.every, reach: -1e9 /* attaques gérées ici */, size: 1.5, color: '#b5452f', shotDur: 0.5, boss: true };
 LEVEL.portX = -2000; // combat sur place : pas de port à atteindre (ni de fort à l'horizon), il faut vaincre le homard
 LEVEL.monsters = [{ type: 'homard', x: 500 }];
