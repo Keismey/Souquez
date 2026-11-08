@@ -316,7 +316,7 @@ function newCrew() { return Array.from({ length: 6 }, (_, i) => ({ x: -118 + i *
 function orderCrew(cmd) {
   const z = ZONES[ORDER_ZONE[cmd]], zn = ORDER_ZONE[cmd];
   G.crew.forEach((r, i) => {
-    if (r.zone === zn && r.y === z.y) return; // déjà sur place
+    if (r.zone === zn && r.y === z.y) { r.panic = 1.3; return; } // déjà sur place : lève quand même les bras
     r.tx = lerp(z.x0, z.x1, (i + 0.5) / G.crew.length) + (Math.random() - 0.5) * 10; r.ty = z.y; r.panic = 1.3; r.zone = zn;
   });
 }
@@ -324,6 +324,7 @@ function updateCrew(dt) {
   const v = 230 * dt;
   for (const r of G.crew) {
     r.panic = Math.max(0, r.panic - dt);
+    if (r.panic > 0.9) continue; // pose d'alerte 0,4 s (bras levés) avant de courir
     const step = (a, b) => Math.abs(b - a) <= v ? b : a + Math.sign(b - a) * v;
     if (r.y !== r.ty) { if (r.x !== LADDER) r.x = step(r.x, LADDER); else r.y = step(r.y, r.ty); }
     else r.x = step(r.x, r.tx);
