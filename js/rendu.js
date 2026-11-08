@@ -9,10 +9,12 @@ function mix(c1, c2, k) { const a = parseInt(c1.slice(1), 16), b = parseInt(c2.s
 let tAmb = 0;
 const C = (c) => cx.fillStyle = c;
 function rr(x, y, w, h, r) { cx.beginPath(); cx.roundRect ? cx.roundRect(x, y, w, h, r) : cx.rect(x, y, w, h); }
-// Pépin dessiné en code par la DA (js/equipage.js). Hauteur en unités du monde, dans le repère du navire :
-// les ponts provisoires font 28 unités, et les mains montent à 1,1·h en panique, donc h = 24 (≈ 40 px sur 720).
-// À agrandir (charte : 60 px) quand le navire définitif aura des ponts plus hauts.
-const PEPIN_H = 24;
+// Pépin dessiné en code par la DA (js/equipage.js). Hauteur en unités du monde, dans le repère du navire.
+// Les mains montent à HANDS·h en panique : la taille est limitée par le pont le plus bas (même taille sur tous les ponts,
+// pas de saut en changeant de pont). Ponts provisoires : machines 24, canons 26 ; pont et proue à l'air libre.
+// Avec le navire Gemini, ces hauteurs viendront de navire.json (ponts ~100 px).
+const PEPIN_MAX = 24, HANDS = 1.15, DECK_CLEAR = { machines: 24, canons: 26 };
+const PEPIN_H = Math.min(PEPIN_MAX, Math.min(...Object.values(DECK_CLEAR)) / HANDS);
 // Pendant la réponse de l'équipage, un matelot à son poste tape le rythme sur l'objet de son poste.
 // État « tambour-<objet> » s'il existe dans js/equipage.js (livré par la DA), sinon « tambour » (petit tambour).
 const TAP_OBJ = { machines: 'marmite', canons: 'coque', pont: 'tambour', proue: 'coque' };
@@ -22,7 +24,8 @@ function pepin(x, y, run, alarm, dir, seed, tap) {
   const s = Math.hypot(cx.getTransform().c, cx.getTransform().d) / dpr; // unités → pixels CSS (contrat : h en pixels)
   cx.scale(1 / s, 1 / s);
   // En frappe, le temps est celui de la musique (0 = un temps), pour que chaque coup tombe pile sur le temps
-  const tm = tap && typeof ctx !== 'undefined' && ctx ? ctx.currentTime - G.start : tAmb;
+  // (moment où le son sort vraiment des haut-parleurs, comme la case qui pulse)
+  const tm = tap && typeof ctx !== 'undefined' && ctx ? audibleAt(performance.now()) - G.start : tAmb;
   EQUIPAGE.draw(cx, 'pepin', 0, 0, PEPIN_H * s, alarm ? 'panique' : run ? 'course' : tap || 'repos', tm, dir || 1, seed || 0);
   cx.restore();
 }
@@ -87,7 +90,7 @@ function drawShip(sh, guard, pulse, listening) {
   FIXED.forEach(([fx2, fy, zn], i) => mate(fx2, fy, active === zn ? pulse : 0, '#f0d9a8', false, false, i + 1));
   const crew = G ? G.crew : newCrew();
   crew.forEach((r, i) => { if (i === 0 && typeof EQUIPAGE !== 'undefined') { const run = r.x !== r.tx || r.y !== r.ty, tap = G && G.mode === 'play' && !run && r.zone && inResp(G.curBeat) ? tapState(r.zone) : null;
-    pepin(r.x, r.y, run, r.panic > 0.9, r.tx < r.x ? -1 : 1, 0, tap); return; } const run = r.x !== r.tx || r.y !== r.ty; mate(r.x, r.y, !run && active === r.zone ? pulse : 0, null, run, r.panic > 0.9, i + 5, r.tx < r.x ? -1 : 1); });
+    pepin(r.x, r.y, run, r.panic > 0.2, r.dir || 1, 0, tap); return; } const run = r.x !== r.tx || r.y !== r.ty; mate(r.x, r.y, !run && active === r.zone ? pulse : 0, null, run, r.panic > 0.2, i + 5, r.dir || 1); });
   // Roue à aubes
   if (!N) {
   cx.save(); cx.translate(-6, 26); cx.rotate(sh.wheel);
