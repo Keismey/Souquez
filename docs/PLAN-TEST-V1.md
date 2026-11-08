@@ -25,7 +25,7 @@ Noter ✅ / ❌ ; un ❌ se signale dans le fil Directeur. Avant de commencer : 
 ## D. Étoiles et butin
 13. **3 étoiles** : arriver au port avec la coque ≥ 10 et en moins de 2 min 45. Le temps final est affiché.
 14. **2 étoiles** : faire exprès d'arriver avec la coque à 9 ou moins (ou en plus de 2 min 45) : une étoile manque, laquelle est claire.
-15. **Coque à 0** : pas d'écran de game over, 0 étoile, retour au port, le butin ramassé est gardé.
+15. **Coque à 0** : pas d'écran de game over, 0 étoile, retour au port, le butin ramassé est gardé à × 1, sans bonus de première étoile.
 16. Butin : × 1 / × 1,5 / × 2 selon 1, 2 ou 3 étoiles, et bonus affiché la **première** fois qu'on gagne chaque étoile (pas la deuxième fois).
 17. Étoiles et meilleur résultat restent après fermeture et relance ; avoir peu d'étoiles ne bloque jamais la mer suivante.
 
@@ -33,6 +33,6 @@ Noter ✅ / ❌ ; un ❌ se signale dans le fil Directeur. Avant de commencer : 
 18. Première partie sans t'entraîner : combien d'étoiles ? La 3e étoile doit demander un effort, pas être impossible.
 19. Bernard-l'Enclume : as-tu compris seul qu'il fallait Protéger ?
 
-## Questions ouvertes pour le directeur
-- Le seuil « coque à 50 % » : 10 sur 20 compte-t-il ? (le plan suppose « ≥ 10 = oui »)
-- Avec 0 étoile, le butin gardé est-il multiplié par 1 ou non ?
+## Règles précisées (2026-11-08)
+- Coque à 10 sur 20 = étoile des 50 % gagnée (« 50 % ou plus »).
+- Coque cédée : butin ramassé gardé à × 1, aucun bonus de première étoile.
