@@ -234,7 +234,16 @@ function winGame() {
   G.result = { time, stars };
   save.stars = Math.max(save.stars || 0, stars); persist();
   $('stars').innerHTML = [0, 1, 2].map(i => '<i class="' + (i < stars ? 'on' : '') + '">★</i>').join('');
-  $('starsWhy').textContent = G.sunk ? t('starsSunk') : t('starsWhy')(fmtTime(time), fmtTime(STARS.refTime));
+  // Détail : chaque étoile avec sa condition, réussie ou non, et la coque restante
+  const hullOk = G.ship.hp >= SHIP.hull * STARS.hullRatio, timeOk = time <= STARS.refTime;
+  const hullTxt = Math.floor(G.ship.hp) + '/' + SHIP.hull, hullMin = Math.ceil(SHIP.hull * STARS.hullRatio);
+  const rows = G.sunk ? [[false, t('starsSunk')]] : [
+    [true, t('starPort')],
+    [hullOk, t('starHull')(hullTxt, hullMin)],
+    [timeOk, t('starTime')(fmtTime(time), fmtTime(STARS.refTime))],
+  ];
+  $('starsWhy').innerHTML = rows.map(([ok, txt]) => '<span class="' + (ok ? 'ok' : '') + '"><b>' + (ok ? '★' : '☆') + '</b>' + txt + '</span>').join('');
+  G.result.rows = rows.map(r => r[0]);
   const at = ctx.currentTime + 0.1;
   [1, 1.25, 1.5, 2].forEach((p, i) => playPad('DING', at + i * 0.15, 0.8, p));
   cheer(at + 0.2, true); cheer(at + 1.1, true); stopMusic(true);
