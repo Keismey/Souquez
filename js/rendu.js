@@ -18,7 +18,7 @@ let PEPIN_H = Math.min(PEPIN_MAX, Math.min(...Object.values(DECK_CLEAR)) / HANDS
 // ---------- Navire de la DA (image Gemini v3, assets/navire/navire.json, js/navire.js) ----------
 // Affiché à 750 px de large sur un écran de 720 px de haut. Équipage à la taille de la charte réduite de 25 % (directeur, 8 nov.),
 // en px à 720 de haut : les mains en panique restent sous le plafond des canons (55 px) et des machines (74 px).
-const TAILLE_EQ = { pepin: 35, matelot: 48, hortense: 64, gaston: 55, bouillon: 58 };
+const TAILLE_EQ = { pepin: 35, matelot: 46, hortense: 64, gaston: 55, bouillon: 58 };
 let NAV = null, FIXES = [];
 function appliquerNavire(n) {
   const k = n.k * PX_TO_UNIT, D = n.data; // unités du monde par pixel de l'image brute
@@ -33,6 +33,24 @@ function appliquerNavire(n) {
   if (G) G.crew = newCrew();
 }
 if (typeof NAVIRE !== 'undefined') NAVIRE.load('assets/navire/navire.json').then((n) => { if (n) appliquerNavire(n); }).catch(() => {});
+// ---------- Effets de la DA (js/effets.js) ----------
+// Tailles en « T » (taille de référence de la DA : 32 px à 720 de haut), converties en unités du monde.
+const EFX_T = 32 * PX_TO_UNIT;
+const shipXY = (rx, ry) => [G.ship.x + NAV.X0 + rx * NAV.ku, SEA + 6 + NAV.Y0 + ry * NAV.ku];
+// Bouche des canons (sabords), point d'impact sur la coque (proue), point du soin (pont) ; anciennes valeurs sans le navire de la DA
+const canonXY = (i) => NAV && NAV.sabords[i] ? [G.ship.x + NAV.sabords[i][0] + 10, SEA + 6 + NAV.sabords[i][1]] : [G.ship.x + 62 + i * 46, SEA - 30];
+const coqueXY = () => NAV ? shipXY(1440, 420) : [G.ship.x + 70, SEA - 40];
+const soinXY = () => NAV ? shipXY(700, 300) : [G.ship.x, SEA - 60];
+function effet(nom, x, y, taille, dir, seed) {
+  if (typeof EFFETS === 'undefined' || !G) return;
+  if (!G.efx) G.efx = [];
+  G.efx.push({ nom, x, y, taille: taille * EFX_T, t0: tAmb, dur: EFFETS.durees[nom] || 0.7, dir: dir || 1, seed: seed || 0 });
+}
+function drawEffets() {
+  if (!G || !G.efx) return;
+  G.efx = G.efx.filter((f) => tAmb - f.t0 < f.dur);
+  for (const f of G.efx) EFFETS.draw(cx, f.nom, f.x, f.y, f.taille, (tAmb - f.t0) / f.dur, tAmb, f.dir, f.seed);
+}
 // Personnage de la DA (js/equipage.js), h en unités du monde, dans le repère courant
 function perso(nom, x, y, h, etat, tm, dir, seed) {
   cx.save(); cx.translate(x, y);
@@ -53,7 +71,13 @@ function drawShipV3(sh, guard, pulse, listening) {
     const tap = resp && !run && r.zone ? tapState(r.zone) : null;
     perso(nom, r.x, r.y, TAILLE_EQ[nom] * PX_TO_UNIT, r.panic > 0.2 ? 'panique' : run ? 'course' : tap || 'repos', tap ? tm : tAmb, r.dir || 1, i);
   });
-  if (guard) { const cxs = NAV.X0 + 1250 * NAV.ku, cys = NAV.Y0 + 360 * NAV.ku; cx.strokeStyle = 'rgba(120,220,255,.85)'; cx.lineWidth = 5; cx.beginPath(); cx.arc(cxs, cys, 120, -1.0, 1.0); cx.stroke(); C('rgba(120,220,255,.12)'); cx.beginPath(); cx.arc(cxs, cys, 120, -1.0, 1.0); cx.lineTo(cxs, cys); cx.fill(); }
+  // Bouclier de la DA : apparaît quand Protéger est actif, encaisse les coups (G.shieldHit)
+  if (G) { G.shieldK = lerp(G.shieldK || 0, guard ? 1 : 0, 0.18); G.shieldHit = Math.max(0, (G.shieldHit || 0) - 4 / 60 / SPB); }
+  const sk = G ? G.shieldK : 0;
+  if (sk > 0.02 && typeof EFFETS !== 'undefined') EFFETS.draw(cx, 'bouclier', NAV.X0 + 1250 * NAV.ku, NAV.Y0 + 360 * NAV.ku, 2.6 * EFX_T, sk, tAmb, 1, G.shieldHit || 0);
+  else if (guard) { const cxs = NAV.X0 + 1250 * NAV.ku, cys = NAV.Y0 + 360 * NAV.ku; cx.strokeStyle = 'rgba(120,220,255,.85)'; cx.lineWidth = 5; cx.beginPath(); cx.arc(cxs, cys, 120, -1.0, 1.0); cx.stroke(); }
+  // Sillage derrière la poupe, selon la vitesse du navire
+  if (typeof EFFETS !== 'undefined') EFFETS.draw(cx, 'sillage', NAV.X0 + 110 * NAV.ku, NAV.Y0 + 540 * NAV.ku, 2.4 * EFX_T, Math.min(1, Math.abs(sh.tx - sh.x) / 30 + 0.15), tAmb, 1, 0);
 }
 // Pendant la réponse de l'équipage, un matelot à son poste tape le rythme sur l'objet de son poste.
 // État « tambour-<objet> » s'il existe dans js/equipage.js (livré par la DA), sinon « tambour » (petit tambour).
@@ -265,11 +289,14 @@ function frame() {
   const listening = G && G.mode !== 'calib' && inResp(G.curBeat);
   drawShip(sh, G && guarded(G.curBeat), pulse, listening);
   // Boulets et projectiles
+  const efx = typeof EFFETS !== 'undefined';
   if (G) for (const s of G.shots) {
     const k = Math.min(1, s.t / s.dur), x = lerp(s.x0, s.x1, k), y = lerp(s.y0, s.y1, k) - Math.sin(k * Math.PI) * (s.mon ? 50 : 60);
+    if (efx && !s.spit) { EFFETS.draw(cx, 'boulet', x, y, (s.mon ? 1.2 : 1.4) * EFX_T, 0, tAmb, s.mon ? -1 : 1); continue; }
     C(s.spit ? '#e0a050' : s.mon ? '#9fe0ff' : '#1d1d22'); cx.beginPath(); cx.arc(x, y, s.spit ? 6 : s.mon ? 8 : 5, 0, 7); cx.fill();
   }
-  if (G) for (const p of G.puffs) { const k = p.t / 0.6; C(p.blue ? 'rgba(140,220,255,' + (1 - k) + ')' : 'rgba(255,190,110,' + (1 - k) * 0.9 + ')'); cx.beginPath(); cx.arc(p.x, p.y, (p.big ? 22 : 12) + k * 30, 0, 7); cx.fill(); }
+  if (efx) drawEffets();
+  if (G && !efx) for (const p of G.puffs) { const k = p.t / 0.6; C(p.blue ? 'rgba(140,220,255,' + (1 - k) + ')' : 'rgba(255,190,110,' + (1 - k) * 0.9 + ')'); cx.beginPath(); cx.arc(p.x, p.y, (p.big ? 22 : 12) + k * 30, 0, 7); cx.fill(); }
   if (G) for (const f of G.fx) { C('rgba(140,240,140,' + (1 - f.t / 0.9) + ')'); const y = f.y - f.t * 40; cx.fillRect(f.x - 2, y - 7, 4, 14); cx.fillRect(f.x - 7, y - 2, 14, 4); }
   // Vagues de premier plan
   C('rgba(28,62,86,.88)'); cx.beginPath(); cx.moveTo(cam - 50, 400);

@@ -184,7 +184,7 @@ function onBeatVisual(k) {
     if (k === e.nextAtk - TELE) { e.tele = 1; crewPanic(); if (e.dmg >= WARN_DMG) { hint(t('incoming')); G.hintHold = k + 2; } }
     if (k === e.nextAtk) {
       e.tele = 0; e.nextAtk = k + e.every; e._atk = performance.now() / 1000; // pour le dessin (coup qui part)
-      G.shots.push({ mon: true, spit: !!e.spitter, x0: e.x - 34 * e.size, y0: corpsY(e, 70), x1: G.ship.x + 70, y1: SEA - 40, t: 0, dur: e.shotDur, dmg: e.dmg });
+      G.shots.push({ mon: true, spit: !!e.spitter, x0: e.x - 34 * e.size, y0: corpsY(e, 70), x1: coqueXY()[0], y1: coqueXY()[1], t: 0, dur: e.shotDur, dmg: e.dmg });
       playPad('BOUM', ctx.currentTime, 0.5, 0.6);
     }
   }
@@ -196,14 +196,14 @@ function onBeatVisual(k) {
     const bonus = rb === 3 && G.resp.q >= 0.75 ? SHIP.perfectBonus : 0;
     const reach = foe && foe.x - G.ship.x <= RANGE;
     for (let i = 0; i < 2; i++) {
-      const mx = G.ship.x + 62 + i * 46;
-      G.shots.push({ x0: mx, y0: SEA - 30, x1: reach ? foe.x - 20 * foe.size + Math.random() * 16 : mx + 170 + Math.random() * 30, y1: reach ? corpsY(foe, 40) : SEA + 4, t: 0, dur: 0.4 + i * 0.05, foe: reach ? foe : null, dmg: i === 0 ? (SHIP.shot + bonus) * powerMult() : 0 });
+      const [mx, my] = canonXY(i); effet('tir', mx, my, 1.6, 1, i);
+      G.shots.push({ x0: mx, y0: my, x1: reach ? foe.x - 20 * foe.size + Math.random() * 16 : mx + 170 + Math.random() * 30, y1: reach ? corpsY(foe, 40) : SEA + 4, t: 0, dur: 0.4 + i * 0.05, foe: reach ? foe : null, dmg: i === 0 ? (SHIP.shot + bonus) * powerMult() : 0 });
       G.ship.recoil[i] = 1;
     }
     if (rb === 1 && !reach) { hint(t('tooFar')); G.hintHold = k + 3; }
   } else if (c === 'HEAL' && (rb === 1 || rb === 3)) {
     G.ship.hp = Math.min(SHIP.hull, G.ship.hp + SHIP.heal * powerMult());
-    G.fx.push({ x: G.ship.x - 20 + Math.random() * 60, y: SEA - 60, t: 0 });
+    G.fx.push({ x: G.ship.x - 20 + Math.random() * 60, y: SEA - 60, t: 0 }); if (rb === 1) effet('soin', ...soinXY(), 3.4, 1, k);
   }
 }
 const JLABEL = { p: 'perfect', g: 'good', e: 'early', l: 'late', x: 'double' };
@@ -295,9 +295,11 @@ function update(dt) {
       const dmg = block ? s.dmg * SHIP.guard : s.dmg;
       sh.hp = Math.max(0, sh.hp - dmg); sh.hurt = 1; crewPanic(); G.shake = block ? 0.3 : 1;
       G.puffs.push({ x: s.x1, y: s.y1, t: 0, big: !block, blue: block });
+      if (block) G.shieldHit = 1; else effet('impact-coque', s.x1, s.y1, 1.5, 1, G.curBeat);
       if (block) { banner(t('blocked')); cheer(ctx.currentTime + 0.1, false); } else { vibrate(40); groan(ctx.currentTime + 0.05); }
       if (sh.hp <= 0) sinkShip();
     } else {
+      if (s.foe) effet('impact-monstre', s.x1, s.y1, 1.4, 1, G.curBeat); else effet('eclaboussure', s.x1, SEA + 8, 1.6, 1, G.curBeat);
       if (s.foe && s.foe.hp > 0 && s.dmg) { s.foe.hp -= s.dmg; s.foe.shake = 1; playPad('TAK', ctx.currentTime, 0.4, 0.6); if (s.foe.hp <= 0) { s.foe.tele = 0; cheer(ctx.currentTime + 0.15, true); } }
       G.puffs.push({ x: s.x1, y: s.y1, t: 0 });
     }
@@ -317,7 +319,7 @@ const ZONES = { machines: { y: 22, x0: -112, x1: 84 }, canons: { y: -6, x0: 6, x
 const ORDER_ZONE = { ADV: 'machines', ATK: 'canons', DEF: 'proue', HEAL: 'pont' };
 const FIXED = [[-82, 22, 'machines'], [36, -6, 'canons'], [-120, -42, 'pont'], [146, -42, 'proue']];
 let LADDER = -56; // remplacés par les ponts de navire.json quand le navire de la DA est chargé (js/rendu.js)
-function newCrew() { const z = ZONES.canons, n = 6; return Array.from({ length: n }, (_, i) => { const x = typeof NAV !== 'undefined' && NAV ? lerp(z.x0, z.x1, (i + 0.5) / n) : -118 + i * 17, y = NAV ? z.y : -6; return { x, y, tx: x, ty: y, panic: 0, ph: i * 1.3, zone: null, dir: 1 }; }); }
+function newCrew() { const z = ZONES.canons, n = 4; /* Pépin et 3 matelots (Hortense, Gaston et Doc restent à leur poste) */ return Array.from({ length: n }, (_, i) => { const x = typeof NAV !== 'undefined' && NAV ? lerp(z.x0, z.x1, (i + 0.5) / n) : -118 + i * 17, y = NAV ? z.y : -6; return { x, y, tx: x, ty: y, panic: 0, ph: i * 1.3, zone: null, dir: 1 }; }); }
 // Panique (décision du directeur) : à l'annonce d'une attaque de monstre et quand la coque est touchée.
 // panic part de 1 : bras levés tant que panic > 0,2 (0,8 s), sur place tant que panic > 0,6 (0,4 s).
 function crewPanic() { if (G && G.crew) for (const r of G.crew) r.panic = 1; }

@@ -10,14 +10,14 @@ resetBoss();
 const enBoss = () => !!(MISSION && MISSION.boss && G && G.mode === 'play');
 const homard = () => G && G.mons.find((e) => e.type === 'homard');
 function pince(h, dmg) {
-  G.shots.push({ mon: true, x0: h.x - 70 * h.size, y0: corpsY(h, 95), x1: G.ship.x + 70, y1: SEA - 40, t: 0, dur: 0.42, dmg });
+  G.shots.push({ mon: true, x0: h.x - 70 * h.size, y0: corpsY(h, 95), x1: coqueXY()[0], y1: coqueXY()[1], t: 0, dur: 0.42, dmg });
   playPad('BOUM', ctx.currentTime, 0.7, 0.5); h.shake = 0.6;
   // Pour le dessin : 1er ou 2e coup de la double pince
   if (h._double) { h._atk2 = performance.now() / 1000; h._double = false; } else { h._atk = performance.now() / 1000; h._double = B.dbl; }
 }
 // Appelé à chaque temps par onBeatVisual (js/partie.js)
 function bossBeat(k) {
-  if (!enBoss() || G.won || k < G.playFrom) return;
+  if (!enBoss() || G.won) return; // tourne aussi pendant le décompte de reprise (comme les autres monstres)
   const h = homard(); if (!h || h.hp <= 0) return;
   B.phase = h.hp > BOSS.phase2 ? 1 : h.hp > BOSS.phase3 ? 2 : 3;
   if (B.phase >= 2 && !B.appel) { // 2 Sardines devant lui (une seule fois) ; en tête de liste, elles prennent les tirs
@@ -27,9 +27,9 @@ function bossBeat(k) {
     B.jet = k + 6;
   }
   if (B.next == null) B.next = Math.max(BOSS.premier, k + BOSS.tele);
-  if (k === B.next - BOSS.tele) { h.tele = 1; B.dbl = B.phase === 3; crewPanic(); hint(t('incoming')); G.hintHold = k + 3; }
-  if (k === B.next) { pince(h, B.dbl ? BOSS.double : BOSS.pince); if (B.dbl) B.second = k + BOSS.ecart; else h.tele = 0; B.next = k + BOSS.every; }
-  if (k === B.second) { pince(h, BOSS.double); B.second = null; h.tele = 0; }
+  if (!h.tele && B.second == null && k >= B.next - BOSS.tele && k < B.next) { h.tele = 1; B.dbl = B.phase === 3; crewPanic(); hint(t('incoming')); G.hintHold = k + 3; }
+  if (k >= B.next) { pince(h, B.dbl ? BOSS.double : BOSS.pince); if (B.dbl) B.second = k + BOSS.ecart; else h.tele = 0; B.next = k + BOSS.every; }
+  if (B.second != null && k >= B.second) { pince(h, BOSS.double); B.second = null; h.tele = 0; }
   if (B.phase === 2 && B.jet != null && k >= B.jet) { // jet de vapeur, non annoncé
     G.shots.push({ mon: true, spit: true, jet: true, x0: h.x - 40 * h.size, y0: corpsY(h, 60) + 10, x1: G.ship.x + 60, y1: SEA - 30, t: 0, dur: 0.5, dmg: BOSS.jet });
     h._jet = performance.now() / 1000; B.jet = k + BOSS.jetEvery;

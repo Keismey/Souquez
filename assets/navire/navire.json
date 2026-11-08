@@ -6,10 +6,10 @@
   "pont":     { "sol": 246, "haut": 116, "x0": 440,  "x1": 770 },
   "proue":    { "sol": 246, "haut": 116, "x0": 1030, "x1": 1190 },
   "canons":   { "sol": 377, "haut": 268, "x0": 520,  "x1": 1190 },
-  "machines": { "sol": 549, "haut": 404, "x0": 520,  "x1": 1000 }
+  "machines": { "sol": 549, "haut": 404, "x0": 560,  "x1": 1010 }
  },
  "echelle": { "x": 481 },
- "fixes": { "hortense": ["pont", 1225], "gaston": ["machines", 790], "bouillon": ["machines", 930] },
+ "fixes": { "hortense": ["pont", 1225], "gaston": ["machines", 650], "bouillon": ["machines", 985] },
  "sabords": [[890, 330], [1110, 330]],
  "pieces": {}
 }
