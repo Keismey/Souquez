@@ -211,6 +211,14 @@ function drawMonstreDA(e) {
     etat.double = B.phase === 3 ? 1 : 0; etat.attaque2 = depuis(e._atk2); etat.colere = B.phase === 3 ? 1 : 0;
     const kj = e._jet == null ? 1 : (performance.now() / 1000 - e._jet) / (1.5 * SPB); etat.jet = kj < 1 ? kj : 0;
     if (etat.double && e.tele) etat.prepare = 1; // entre les 2 coups de la double pince
+    // Double pince (DA) : la 1re reste baissée (attaque = 1), la 2e s'arme (arme2) pendant l'écart, puis frappe (attaque2)
+    const c = e._atk == null ? 99 : (performance.now() / 1000 - e._atk) / SPB;
+    if (etat.double && c < BOSS.ecart + 1) {
+      etat.prepare = 1; etat.attaque = Math.min(1, c);
+      const c2 = e._atk2 != null && e._atk2 >= e._atk ? (performance.now() / 1000 - e._atk2) / SPB : -1;
+      etat.arme2 = c2 >= 0 ? 1 : Math.max(0, Math.min(1, c - (BOSS.ecart - 1)));
+      etat.attaque2 = c2 >= 0 && c2 < 1 ? c2 : 0;
+    }
   }
   MONSTRES.draw(cx, nom, e.x, SEA + 8, h, tAmb, -1, e.x * 0.01, etat);
   if (e.hp <= 0) return;

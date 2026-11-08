@@ -203,16 +203,21 @@ const MONSTRES = (() => {
   }
 
   // ---------- Tonton Homard (Léviathan de la mer 1) : homard géant, pince-marteau à vapeur, chaudière sur le dos ----------
-  // etat en plus : double (0/1, phase 3 : la 2e pince frappe aussi), attaque2 (0 → 1, 2e coup de la double pince),
+  // etat en plus : double (0/1, phase 3 : la 2e pince frappe aussi), arme2 (0 → 1, le temps entre les 2 coups : la 2e pince
+  // finit de monter plus haut et tremble), attaque2 (0 → 1, 2e coup de la double pince ; garder attaque = 1 après le 1er coup),
   // jet (0 → 1, jet de vapeur de la phase 2), colere (0/1, phase 3 : plus de vapeur, carapace plus sombre)
   function homard(g, lw, t, s, E) {
     const flotte = Math.sin(t * 1.4 + s) * 1.5, col = E.colere ? mix(C.brique, C.marine, 0.15) : C.brique;
     // Levée d'une pince : prepare la lève, attaque l'abat (le coup porte vers attaque = 0,3)
     const leve = (prep, att) => att > 0 ? (att < 0.3 ? 1 - easeIn(att / 0.3) : -Math.exp(-(att - 0.3) * 8) * 0.12) : easeOut(prep);
     const choc = att => att > 0.28 ? Math.exp(-(att - 0.3) * 8) : 0;
-    const l1 = leve(E.prepare, E.attaque), l2 = E.double ? leve(E.prepare, E.attaque2) : 0;
+    // Double pince (2 temps d'écart) : la 2e pince reste à mi-hauteur pendant l'annonce, monte plus haut et tremble
+    // pendant le temps qui sépare les coups (arme2), puis s'abat (attaque2). Le 1er coup et le 2e ne se confondent pas.
+    const a2 = E.arme2 || 0, h2 = 0.7 + 0.6 * easeOut(a2);
+    const l1 = leve(E.prepare, E.attaque);
+    const l2 = !E.double ? 0 : E.attaque2 > 0 ? leve(1, E.attaque2) * 1.3 : easeOut(E.prepare) * h2 + (a2 > 0 && a2 < 1 ? Math.sin(t * 46) * 0.05 : 0);
     const c1 = choc(E.attaque), c2 = E.double ? choc(E.attaque2) : 0;
-    g.translate(0, flotte + (c1 + c2) * 2);
+    g.translate(0, flotte + (c1 + c2 * 1.6) * 2);
     // Pattes sous l'eau
     for (let i = 0; i < 4; i++) {
       const a = Math.sin(t * 4 + i * 1.4 + s) * 0.3;
@@ -221,7 +226,11 @@ const MONSTRES = (() => {
       g.restore();
     }
     // Pince du fond (pince naturelle ; en phase 3 elle frappe aussi)
-    pinceHomard(g, lw, t, 10, -24, 0.55 - l2 * 1.9 + c2 * 0.1, sombre(col), false);
+    // En phase 3, la 2e pince s'éclaircit et grossit quand elle s'arme, et frappe plus bas que le marteau pour rester visible
+    const vive = E.double && (a2 > 0 || E.attaque2 > 0), z2 = 1 + 0.18 * (E.attaque2 > 0 ? 1 : easeOut(a2));
+    g.save(); g.translate(10, -24); g.scale(z2, z2);
+    pinceHomard(g, lw / z2, t, 0, 0, (E.double ? 0.85 : 0.55) - l2 * 1.9 + c2 * 0.1, vive ? col : sombre(col), false);
+    g.restore();
     // Queue qui sort de l'eau à l'arrière, en segments, avec l'éventail
     const sway = Math.sin(t * 1.8 + s) * 0.12;
     g.save(); g.translate(-26, -20);
@@ -281,7 +290,7 @@ const MONSTRES = (() => {
     // Pince-marteau de devant
     pinceHomard(g, lw, t, 20, -26, 0.55 - l1 * 1.9 + c1 * 0.1, col, true);
     if (c1 > 0.02) etoiles(g, lw, 66, 2, c1);
-    if (c2 > 0.02) etoiles(g, lw, 56, 4, c2);
+    if (c2 > 0.02) etoiles(g, lw, 54, 14, Math.min(1, c2 * 1.3));
   }
   const D2 = mix(C.moutarde, C.brique, 0.35);
   function pinceHomard(g, lw, t, x, y, angle, col, marteau) {
@@ -319,7 +328,7 @@ const MONSTRES = (() => {
 
   function draw(g, nom, x, y, h, t, dir, seed, etat) {
     const D = PERSOS[nom] || PERSOS.sardine;
-    const E = { prepare: 0, attaque: 0, attaque2: 0, touche: 0, coule: 0, double: 0, jet: 0, colere: 0, ...(etat || {}) }, s = seed || 0;
+    const E = { prepare: 0, attaque: 0, attaque2: 0, arme2: 0, touche: 0, coule: 0, double: 0, jet: 0, colere: 0, ...(etat || {}) }, s = seed || 0;
     const lw = Math.max(0.7, 110 / h);
     g.save();
     g.translate(x, y); g.scale((dir || 1) * h / 100, h / 100);
