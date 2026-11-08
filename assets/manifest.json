@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "note": "Liste des images présentes. Le jeu ne charge que ce qui est listé ici ; sans image, il garde ses formes simples.",
+  "navire": null,
+  "fond": null,
+  "monstres": {},
+  "equipage": []
+}

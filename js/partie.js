@@ -27,8 +27,8 @@ function updateCombo() {
   box.classList.toggle('full', n >= POWER.steps);
 }
 // Pleine puissance : +1 cran par commande réussie, −1 par raté ou rythme cassé (jamais de remise à zéro)
-// Erreur : perd POWER.penalty crans, ou tout si penalty vaut 0
-const powerLoss = () => -(POWER.penalty > 0 ? POWER.penalty : POWER.steps);
+// Erreur : perd penaltyNow() crans, ou tout si elle vaut 0 (voir donnees.js)
+const powerLoss = () => { const p = penaltyNow(); return -(p > 0 ? p : POWER.steps); };
 function powerStep(d) {
   const was = G.power; G.power = clamp(G.power + d, 0, POWER.steps);
   updateCombo();
@@ -188,7 +188,7 @@ function onBeatVisual(k) {
   if (!inResp(k)) return;
   const c = G.resp.cmd, rb = k - G.resp.k0, foe = aliveEnemy();
   if (c === 'ADV') {
-    G.ship.tx = Math.min(G.ship.tx + SHIP.advance, foe ? foe.x - STOP : LEVEL.portX - 280);
+    G.ship.tx = Math.min(G.ship.tx + SHIP.advance * (G.resp.full ? POWER.advMult : 1), foe ? foe.x - STOP : LEVEL.portX - 280);
   } else if (c === 'ATK' && (rb === 1 || rb === 3)) {
     const bonus = rb === 3 && G.resp.q >= 0.75 ? SHIP.perfectBonus : 0;
     const reach = foe && foe.x - G.ship.x <= RANGE;
