@@ -13,8 +13,8 @@ Tenue par le fil QA. Le directeur signale les bugs dans le fil Directeur, qui le
 | 4 | ⚪ | 0.8.1 | Écran de victoire à 2 étoiles : ne dit pas quelle étoile manque (coque non affichée). | Programmation | vérifié (0.8.2) |
 | 5 | ⚪ | 0.8.1 | Texte de victoire « Le fort ennemi est tombé » : reste de l'ancien thème. | Narration | vérifié (0.8.2) |
 | 6 | ⚪ | 0.8.2 | Écran de 360 px de haut : le bouton « Écran titre » de la victoire sort de l'écran (atteignable en faisant défiler). | Programmation | vérifié (0.8.3) |
-| 7 | 🟠 | 0.9.0 | Après une scène ou une pause, le jeu repart en 0,6 s sans décompte ; une reprise en retard coûte la pénalité « rythme cassé » (−2 crans en sortant de la scène « attaque »). Contredit « pause gratuite ». | Programmation | ouvert |
-| 8 | ⚪ | 0.9.0 | Nouveau joueur : l'intro s'affiche par-dessus l'écran « Calibrage 12/12 ». | Programmation | ouvert |
+| 7 | 🟠 | 0.9.0 | Après une scène ou une pause, le jeu repart en 0,6 s sans décompte ; une reprise en retard coûte la pénalité « rythme cassé » (−2 crans en sortant de la scène « attaque »). Contredit « pause gratuite ». | Programmation | vérifié (0.9.1) |
+| 8 | ⚪ | 0.9.0 | Nouveau joueur : l'intro s'affiche par-dessus l'écran « Calibrage 12/12 ». | Programmation | vérifié (0.9.1) |
 
 ## Versions validées
 
