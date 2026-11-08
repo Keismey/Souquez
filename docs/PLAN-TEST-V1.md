@@ -19,8 +19,8 @@ Noter ✅ / ❌ ; un ❌ se signale dans le fil Directeur. Avant de commencer : 
 ## C. Pleine puissance
 9. Après **4 ordres réussis d'affilée**, la pleine puissance est visible (jauge pleine ou signe clair).
 10. En pleine puissance, dégâts et soins sont **× 1,5** (exemple : Sardine tombe plus vite).
-11. Un ordre raté fait **perdre un seul cran** (4 → 3), pas de retour à zéro.
-12. Une pause (bouton ou quitter l'appli) fait aussi perdre un seul cran.
+11. Une erreur (note oubliée ou fausse note, même au milieu d'un ordre) fait **perdre un seul cran** (4 → 3), pas de retour à zéro.
+12. Une pause (bouton ou quitter l'appli) est **gratuite** : aucun cran perdu.
 
 ## D. Étoiles et butin
 13. **3 étoiles** : arriver au port avec la coque ≥ 10 et en moins de 2 min 45. Le temps final est affiché.
@@ -34,5 +34,6 @@ Noter ✅ / ❌ ; un ❌ se signale dans le fil Directeur. Avant de commencer : 
 19. Bernard-l'Enclume : as-tu compris seul qu'il fallait Protéger ?
 
 ## Règles précisées (2026-11-08)
+- Une erreur = une seule pénalité ; la pause ne coûte rien (décision du directeur, 0.8.4).
 - Coque à 10 sur 20 = étoile des 50 % gagnée (« 50 % ou plus »).
 - Coque cédée : butin ramassé gardé à × 1, aucun bonus de première étoile.
