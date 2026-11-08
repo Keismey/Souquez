@@ -1,34 +1,194 @@
-// Souquez ! : équipage dessiné en canvas (membres flottants). Modèle de départ pour la DA.
+// Souquez ! : équipage dessiné en canvas (membres flottants), charte piste 3.
 // Contrat : /mnt/project-files/souquez/prog/contrat-equipage-canvas.md
+// EQUIPAGE.draw(g, nom, x, y, h, etat, t, dir, seed) : pieds en (x, y), hauteur h px.
 'use strict';
 const EQUIPAGE = (() => {
   const C = { marine: '#1F2A44', brique: '#B5452F', creme: '#F2E6CC', moutarde: '#E0A82E', vert: '#7FA89A', marine2: '#3C4D6B', sable: '#D9C9A6' };
-  const BEAT = 60 / 102;
-  // Position des membres selon l'état, en fractions de la hauteur (u = h). Origine : entre les pieds, y vers le haut négatif.
+  const BEAT = 60 / 102, TAU = Math.PI * 2;
+  // Teinte du fond : la couleur mélangée à 28 % de marine (calculée une fois)
+  const mix = (a, b, k) => '#' + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - k) + parseInt(b.substr(i, 2), 16) * k).toString(16).padStart(2, '0')).join('');
+  const F = {}; for (const k in C) F[k] = mix(C[k], C.marine, 0.28);
+  const D = { moutarde: mix(C.moutarde, C.brique, 0.35), creme: C.sable };
+  const frac = v => v - Math.floor(v);
+
+  // ---------- Morceaux de Pépin (unité : 1 = 1 % de la hauteur, x vers la proue) ----------
+  function trace(g, lw) { g.lineWidth = lw; g.strokeStyle = C.marine; g.stroke(); }
+
+  function botte(g, lw, fond) {
+    const col = fond ? F.moutarde : C.moutarde;
+    g.beginPath();
+    g.moveTo(-6, -14); g.lineTo(4, -14); g.lineTo(4.6, -7.4);
+    g.quadraticCurveTo(12.5, -7.8, 13.6, -2.8); g.quadraticCurveTo(14, 0, 11, 0);
+    g.lineTo(-5.5, 0); g.quadraticCurveTo(-7.2, 0, -7, -2.2); g.closePath();
+    g.fillStyle = col; g.fill();
+    g.save(); g.clip();
+    g.fillStyle = fond ? F.marine : C.marine; g.fillRect(-9, -2.4, 26, 4);           // semelle
+    g.fillStyle = fond ? mix(D.moutarde, C.marine, 0.28) : D.moutarde; g.fillRect(-9, -14.5, 15, 3.4); // revers
+    g.restore();
+    trace(g, lw);
+  }
+
+  function moufle(g, lw, fond) {
+    const col = fond ? F.vert : C.vert;
+    g.fillStyle = col;
+    g.beginPath(); g.ellipse(4.2, -1.2, 2.4, 3.4, 0.55, 0, TAU); g.fill(); trace(g, lw); // pouce
+    g.beginPath(); g.ellipse(0, 0, 5.4, 6.4, 0, 0, TAU); g.fill(); trace(g, lw);
+    g.fillStyle = fond ? F.creme : C.creme;                                            // poignet tricoté
+    g.beginPath(); g.roundRect ? g.roundRect(-4.6, -8.6, 9.2, 3.6, 1.6) : g.rect(-4.6, -8.6, 9.2, 3.6); g.fill(); trace(g, lw);
+  }
+
+  function bouee(g, lw, devant) {
+    const a = 23, b = 6.2, ep = 6.4, y = 8;
+    const L = Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+    const arc = () => { g.beginPath(); devant ? g.ellipse(0, y, a, b, 0, 0, Math.PI) : g.ellipse(0, y, a, b, 0, Math.PI, TAU); };
+    g.lineCap = 'butt';
+    arc(); g.strokeStyle = C.marine; g.lineWidth = ep + lw * 2; g.stroke();
+    arc(); g.strokeStyle = devant ? C.creme : C.sable; g.lineWidth = ep; g.stroke();
+    g.setLineDash([L / 8, L / 8]); g.lineDashOffset = devant ? L / 16 : -L / 16;
+    arc(); g.strokeStyle = devant ? C.brique : F.brique; g.stroke();
+    g.setLineDash([]);
+  }
+
+  function corps(g, lw) {
+    const W = 18, top = -19, bot = 19;
+    const path = () => {
+      g.beginPath(); g.moveTo(0, top);
+      g.bezierCurveTo(W * 0.72, top, W, -6, W, 5); g.bezierCurveTo(W, bot - 1, W * 0.55, bot, 0, bot);
+      g.bezierCurveTo(-W * 0.55, bot, -W, bot - 1, -W, 5); g.bezierCurveTo(-W, -6, -W * 0.72, top, 0, top); g.closePath();
+    };
+    path(); g.fillStyle = C.creme; g.fill();
+    g.save(); g.clip();
+    g.fillStyle = C.marine; for (let y = top + 5; y < 8; y += 6.2) g.fillRect(-W - 2, y, W * 2 + 4, 3.1); // rayures
+    g.fillStyle = C.brique; g.fillRect(-W - 2, 9, W * 2 + 4, 14);                                        // culotte
+    g.restore();
+    g.fillStyle = C.marine; g.beginPath(); g.ellipse(1, top + 1.6, 8.5, 3.4, 0, 0, TAU); g.fill();       // col roulé
+    path(); trace(g, lw);
+  }
+
+  function tete(g, lw, P) {
+    // Mèches dans la nuque
+    g.fillStyle = C.marine2; g.beginPath(); g.moveTo(-14, 1); g.lineTo(-17, 8); g.lineTo(-12, 6); g.lineTo(-13, 11); g.lineTo(-8, 7); g.closePath(); g.fill(); trace(g, lw * 0.8);
+    // Nez court (dessiné avant le visage pour ne garder que la bosse)
+    g.fillStyle = C.creme; g.beginPath(); g.arc(14.2, 4.8, 3.1, 0, TAU); g.fill(); trace(g, lw);
+    g.beginPath(); g.ellipse(0, 0, 15, 14.4, 0, 0, TAU); g.fill(); trace(g, lw);
+    g.fillStyle = 'rgba(181,69,47,.28)'; g.beginPath(); g.arc(6.5, 7.5, 2.6, 0, TAU); g.fill();        // joue
+    // Bouche
+    g.fillStyle = C.marine; g.strokeStyle = C.marine; g.lineWidth = lw; g.lineCap = 'round';
+    if (P.bouche === 'o') { g.beginPath(); g.ellipse(9.4, 10.4, 2.6, 3.4, 0, 0, TAU); g.fill(); g.fillStyle = C.brique; g.beginPath(); g.ellipse(9.4, 12, 1.6, 1.2, 0, 0, TAU); g.fill(); }
+    else if (P.bouche === 'souffle') { g.beginPath(); g.ellipse(10.2, 10, 1.5, 1.8, 0, 0, TAU); g.fill(); }
+    else if (P.bouche === 'rire') { g.beginPath(); g.moveTo(6.4, 9); g.quadraticCurveTo(9.5, 12.6, 12.4, 8.6); g.stroke(); }
+    else { g.beginPath(); g.moveTo(7, 10); g.quadraticCurveTo(9.4, 11, 11.6, 9.8); g.stroke(); }
+    // Bonnet trop grand : pointe qui retombe en arrière (animée), dôme, revers côtelé
+    g.save(); g.translate(-5, -17); g.rotate(-P.flop);
+    g.beginPath(); g.moveTo(10, 0); g.bezierCurveTo(4, -9, -16, -9, -21, 5);
+    g.quadraticCurveTo(-21.5, 9, -18, 10); g.bezierCurveTo(-12, 4, -4, 6, 2, 8); g.closePath();
+    g.fillStyle = C.marine; g.fill(); trace(g, lw);
+    g.strokeStyle = C.marine2; g.lineWidth = lw * 0.9; g.beginPath(); g.moveTo(4, 0); g.quadraticCurveTo(-8, -4, -16, 4); g.stroke();
+    g.fillStyle = C.brique; g.beginPath(); g.arc(-19.5, 9.5, 4.2, 0, TAU); g.fill(); trace(g, lw);    // pompon
+    g.strokeStyle = 'rgba(31,42,68,.5)'; g.lineWidth = lw * 0.7; g.beginPath(); g.moveTo(-21.5, 8); g.lineTo(-17.5, 11.5); g.moveTo(-19.5, 6.5); g.lineTo(-19.5, 12.5); g.stroke();
+    g.restore();
+    g.beginPath(); g.moveTo(-18, 0); g.bezierCurveTo(-19, -15, -9, -22, 2, -22); g.bezierCurveTo(13, -22, 18.5, -13, 18, 0); g.closePath();
+    g.fillStyle = C.marine; g.fill(); trace(g, lw);
+    g.strokeStyle = C.marine2; g.lineWidth = lw * 0.9; g.beginPath(); g.moveTo(-8, -18); g.quadraticCurveTo(-3, -9, -4, -3); g.moveTo(6, -19); g.quadraticCurveTo(10, -10, 9, -3); g.stroke();
+    g.beginPath(); g.roundRect ? g.roundRect(-19, -5, 38.5, 10, 3.6) : g.rect(-19, -5, 38.5, 10);
+    g.fillStyle = C.marine; g.fill();
+    g.save(); g.clip(); g.fillStyle = C.marine2; for (let x = -17; x < 20; x += 3.3) g.fillRect(x, -6, 1.4, 12); g.restore();
+    trace(g, lw);
+  }
+
+  function tambour(g, lw, coup) {
+    // Petit tambour suspendu devant Pépin ; centre du dessus en (0, 0)
+    g.fillStyle = C.brique; g.beginPath(); g.rect(-11, 0, 22, 13); g.fill(); trace(g, lw);
+    g.strokeStyle = C.creme; g.lineWidth = lw * 1.1; g.beginPath();
+    for (let i = 0; i < 4; i++) { const x = -11 + i * 5.5; g.moveTo(x, 2.5); g.lineTo(x + 5.5, 10.5); g.moveTo(x + 5.5, 2.5); g.lineTo(x, 10.5); } g.stroke();
+    g.fillStyle = C.moutarde; g.fillRect(-11.8, -0.4, 23.6, 3); g.fillRect(-11.8, 11, 23.6, 3);
+    g.beginPath(); g.rect(-11.8, -0.4, 23.6, 3); g.rect(-11.8, 11, 23.6, 3); trace(g, lw * 0.8);
+    g.beginPath(); g.ellipse(0, 0, 11.8, 2.8, 0, 0, TAU); g.fillStyle = coup > 0.4 ? '#FFF6DE' : C.creme; g.fill(); trace(g, lw);
+    if (coup > 0.02) {                                                                            // éclat de la frappe
+      g.strokeStyle = C.moutarde; g.lineWidth = lw * 1.4; g.lineCap = 'round'; g.globalAlpha = Math.min(1, coup * 2);
+      const r = 9 + (1 - coup) * 8; g.beginPath();
+      for (const a of [-2.6, -2.0, -1.15, -0.55]) { g.moveTo(Math.cos(a) * r, Math.sin(a) * r - 2); g.lineTo(Math.cos(a) * (r + 5), Math.sin(a) * (r + 5) - 2); }
+      g.stroke(); g.globalAlpha = 1;
+    }
+  }
+
+  function goutte(g, lw, k) {
+    g.beginPath(); g.moveTo(0, -4.5); g.quadraticCurveTo(3.4, 0, 2.6, 2); g.arc(0, 2, 2.6, 0, Math.PI); g.quadraticCurveTo(-3.4, 0, 0, -4.5);
+    g.fillStyle = C.vert; g.fill(); trace(g, lw);
+    g.fillStyle = C.creme; g.beginPath(); g.arc(-0.9, 1.4, 0.9, 0, TAU); g.fill();
+  }
+
+  // ---------- Poses (fonction pure du temps) ----------
   function pose(etat, t, seed) {
-    const s = Math.sin(t * 2.4 + seed);
-    const P = { corps: [0, -0.45 + s * 0.005], tete: [0.02, -0.8], mainAv: [0.12, -0.42], mainAr: [-0.1, -0.44], piedAv: [0.08, 0], piedAr: [-0.07, 0], rot: 0 };
-    if (etat === 'course') { const r = t * 11 + seed; P.piedAv = [Math.sin(r) * 0.15, -Math.max(0, Math.cos(r)) * 0.08]; P.piedAr = [-Math.sin(r) * 0.15, -Math.max(0, -Math.cos(r)) * 0.08]; P.mainAv[0] -= Math.sin(r) * 0.1; P.mainAr[0] += Math.sin(r) * 0.1; P.rot = 0.12; }
-    if (etat === 'panique') { const w = Math.sin(t * 19 + seed); P.mainAv = [0.14, -0.95 + w * 0.04]; P.mainAr = [-0.12, -0.98 - w * 0.04]; }
-    if (etat === 'tambour') { const f = (t / BEAT) % 1, up = f < 0.1 ? 0 : Math.sin(Math.min(1, (f - 0.1) / 0.9) * Math.PI); P.mainAv = [0.2, -0.45 - up * 0.2]; }
+    const s = seed || 0, P = {
+      corps: [0, -36, 0, 1, 1], tete: [4, -74, 0],
+      main: [[-31, -33, 0.15], [31, -33, -0.15]], pied: [[-9, 0, 0], [7, 0, 0]],
+      flop: 0, bouche: 'calme', gouttes: false, tambour: -1, ombre: 1,
+    };
+    if (etat === 'course' || etat === 'panique') {
+      const pan = etat === 'panique', ph = (t + s * 0.31) * TAU * (pan ? 2.3 : 1.7);
+      for (let i = 0; i < 2; i++) {
+        const p = ph + i * Math.PI, up = Math.max(0, Math.sin(p));
+        P.pied[i] = [(i ? 4 : -3) + Math.cos(p) * (pan ? 13 : 12), -up * (pan ? 10 : 8), -0.35 * up + 0.15 * Math.max(0, -Math.sin(p)) * 0];
+      }
+      const rebond = Math.abs(Math.sin(ph));
+      P.corps = [2, -37 - rebond * 3, pan ? 0.03 * Math.sin(t * 31) : 0.11, 1 + rebond * 0.02, 1 - rebond * 0.03 + 0.03];
+      P.tete = [pan ? 4 + Math.sin(t * 37) * 0.9 : 7, -75 - Math.abs(Math.sin(ph - 0.5)) * 3.2, pan ? -0.06 : 0.09];
+      if (pan) {
+        for (let i = 0; i < 2; i++) { const a = ph * 1.4 + i * Math.PI; P.main[i] = [(i ? 37 : -34) + Math.cos(a) * 4, (i ? -86 : -84) + Math.sin(a) * 5, Math.sin(a) * 0.7 + (i ? 0.5 : -0.5)]; }
+        P.flop = 0.25 + Math.sin(t * 15) * 0.35; P.bouche = 'o'; P.gouttes = true;
+      } else {
+        for (let i = 0; i < 2; i++) { const p = ph + i * Math.PI + Math.PI; P.main[i] = [(i ? 30 : -27) + Math.cos(p) * 9, -34 - Math.sin(p) * 3, Math.cos(p) * 0.45]; }
+        P.flop = 0.22 + Math.abs(Math.sin(ph - 0.9)) * 0.18; P.bouche = 'souffle';
+      }
+      P.ombre = 1 - rebond * 0.08;
+    } else if (etat === 'tambour') {
+      const beat = t / BEAT, k = frac(beat), sq = Math.exp(-k * 7), nod = Math.exp(-Math.max(0, k - 0.06) * 6);
+      P.corps = [-1, -36 + sq * 0.9, 0.06, 1 + sq * 0.025, 1 - sq * 0.04];
+      P.tete = [4, -74 + nod * 1.8, 0.05 + nod * 0.05];
+      for (let j = 0; j < 2; j++) {
+        const q = frac((beat - j) / 2), qq = q < 0.8 ? q / 0.8 * 0.5 : 0.5 + (q - 0.8) / 0.2 * 0.5, L = 15 * Math.sin(Math.PI * qq);
+        P.main[j] = [j ? 44 : 32, -38.5 - L, -0.25 - L * 0.025];
+      }
+      P.pied[1] = [7, 0, -0.22 * Math.sin(Math.PI * k)];
+      P.flop = 0.06 + sq * 0.12; P.bouche = 'rire'; P.tambour = sq;
+    } else {
+      const tt = t + s * 0.37, br = Math.sin(tt * 2.2);
+      P.corps = [0, -36 - br * 0.6, 0, 1 - br * 0.008, 1 + br * 0.018];
+      P.tete = [4, -74 - Math.sin(tt * 2.2 - 0.6) * 1, Math.sin(tt * 0.9) * 0.035];
+      const hb = Math.sin(tt * 2.2 - 0.9) * 1.2;
+      P.main = [[-31, -33 - hb, 0.15 + br * 0.04], [31, -33 - hb, -0.15 - br * 0.04]];
+      P.flop = Math.sin(tt * 1.1) * 0.07;
+    }
     return P;
   }
-  const PERSOS = {
-    // Chaque personnage dessine ses morceaux autour de (0, 0) ; u = unité (hauteur du personnage)
-    pepin: {
-      corps(g, u) { g.fillStyle = C.marine; g.beginPath(); g.ellipse(0, 0, u * 0.14, u * 0.2, 0, 0, 7); g.fill(); },
-      tete(g, u) { g.fillStyle = C.creme; g.beginPath(); g.arc(0, 0, u * 0.13, 0, 7); g.fill(); g.fillStyle = C.marine; g.beginPath(); g.arc(0, -u * 0.03, u * 0.14, Math.PI, 0); g.fill(); },
-      main(g, u, fond) { g.fillStyle = fond ? '#6a8c80' : C.vert; g.beginPath(); g.arc(0, 0, u * 0.05, 0, 7); g.fill(); },
-      pied(g, u, fond) { g.fillStyle = fond ? '#b88a26' : C.moutarde; g.beginPath(); g.ellipse(u * 0.03, -u * 0.04, u * 0.07, u * 0.04, 0, 0, 7); g.fill(); },
-    },
-  };
+
+  // ---------- Dessin ----------
+  function pepin(g, h, etat, t, seed) {
+    const P = pose(etat, t, seed), lw = Math.max(0.7, 110 / h);
+    const at = (p, fn) => { g.save(); g.translate(p[0], p[1]); g.rotate(p[2] || 0); if (p[3]) g.scale(p[3], p[4]); fn(); g.restore(); };
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    g.fillStyle = 'rgba(31,42,68,.16)'; g.beginPath(); g.ellipse(2, 0.5, 21 * P.ombre, 2.6, 0, 0, TAU); g.fill();
+    at(P.pied[0], () => botte(g, lw, true));
+    at(P.main[0], () => moufle(g, lw, true));
+    at(P.corps, () => { bouee(g, lw, false); corps(g, lw); bouee(g, lw, true); });
+    at(P.tete, () => tete(g, lw, P));
+    if (P.gouttes) for (let i = 0; i < 2; i++) {
+      const q = frac(t * 1.7 + i * 0.5); g.globalAlpha = q < 0.7 ? 1 : (1 - q) / 0.3;
+      at([P.tete[0] + (i ? 1 : -1) * (19 + q * 13), P.tete[1] - 4 - Math.sin(q * Math.PI) * 6 + q * 12, (i ? 0.5 : -0.5) + q * (i ? 0.5 : -0.5)], () => goutte(g, lw, q));
+      g.globalAlpha = 1;
+    }
+    at(P.pied[1], () => botte(g, lw, false));
+    if (P.tambour >= 0) at([38, -32], () => tambour(g, lw, P.tambour));
+    at(P.main[1], () => moufle(g, lw, false));
+  }
+
+  const PERSOS = { pepin };
   function draw(g, nom, x, y, h, etat, t, dir, seed) {
-    const D = PERSOS[nom] || PERSOS.pepin, P = pose(etat, t, seed || 0), at = (p, fn) => { g.save(); g.translate(p[0] * h, p[1] * h); fn(); g.restore(); };
-    g.save(); g.translate(x, y); g.scale(dir || 1, 1); g.rotate(P.rot * 0.3);
-    at(P.piedAr, () => D.pied(g, h, true)); at(P.mainAr, () => D.main(g, h, true));
-    at(P.corps, () => D.corps(g, h)); at(P.tete, () => D.tete(g, h));
-    at(P.piedAv, () => D.pied(g, h, false)); at(P.mainAv, () => D.main(g, h, false));
+    g.save();
+    g.translate(x, y); g.scale((dir || 1) * h / 100, h / 100);
+    (PERSOS[nom] || pepin)(g, h, etat, t, seed || 0);
     g.restore();
   }
-  return { draw, BEAT };
+  return { draw, BEAT, noms: Object.keys(PERSOS), etats: ['repos', 'course', 'panique', 'tambour'] };
 })();
