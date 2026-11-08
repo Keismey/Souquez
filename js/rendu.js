@@ -9,7 +9,9 @@ function mix(c1, c2, k) { const a = parseInt(c1.slice(1), 16), b = parseInt(c2.s
 let tAmb = 0;
 const C = (c) => cx.fillStyle = c;
 function rr(x, y, w, h, r) { cx.beginPath(); cx.roundRect ? cx.roundRect(x, y, w, h, r) : cx.rect(x, y, w, h); }
-function mate(x, y, bob, tint, run, alarm) {
+function mate(x, y, bob, tint, run, alarm, idx, dir) {
+  // Image de la DA si elle existe : matelot en morceaux animé
+  if (ART.equipage.length) { const P = ART.equipage[(idx || 0) % ART.equipage.length]; drawPuppet(P, x, y, run ? 'run' : alarm ? 'alarm' : 'idle', bob, dir || 1, (idx || 0) * 1.7); return; }
   y -= bob * 5 + (run ? Math.abs(Math.sin(tAmb * 18 + x)) * 3 : 0);
   C(tint || '#e9dcc0');
   if (run) { cx.strokeStyle = tint || '#e9dcc0'; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(x - 4, y - 12); cx.lineTo(x - 8, y - 22); cx.moveTo(x + 4, y - 12); cx.lineTo(x + 8, y - 22); cx.stroke(); }
@@ -21,6 +23,12 @@ function mate(x, y, bob, tint, run, alarm) {
 function drawShip(sh, guard, pulse, listening) {
   const bob = Math.sin(tAmb * 1.6) * 2 + sh.hurt * 3 * Math.sin(tAmb * 40);
   cx.save(); cx.translate(sh.x, SEA + 6 + bob); cx.scale(0.9, 0.9);
+  const N = ART.navire;
+  if (N) { // Image de la DA : coque en coupe (largeur en unités ; x, y = coin haut gauche par rapport au navire)
+    const w = N.largeur || 330, h = w * N.img.height / N.img.width;
+    if (sh.hurt > 0.5) cx.filter = 'sepia(1) saturate(3) hue-rotate(-30deg)';
+    cx.drawImage(N.img, N.x ?? -w / 2, N.y ?? 30 - h, w, h); cx.filter = 'none';
+  } else {
   // Cheminée et fumée
   C('#3d3f48'); cx.fillRect(-92, -118, 20, 70);
   C('#b5442e'); cx.fillRect(-92, -118, 20, 8);
@@ -29,44 +37,63 @@ function drawShip(sh, guard, pulse, listening) {
   C('#7d6650'); rr(-62, -84, 84, 44, 6); cx.fill();
   C('#2b211a'); for (let i = 0; i < 3; i++) { cx.beginPath(); cx.arc(-44 + i * 24, -62, 6, 0, 7); cx.fill(); }
   C('#5a4636'); cx.fillRect(-68, -88, 96, 6);
-  mate(-30, -88, 0, '#f4c86a');
+  }
+  mate(-30, -88, 0, '#f4c86a', false, false, 0);
   const dr = 9 + pulse * 2.5; C('#c98b4f'); cx.beginPath(); cx.arc(-12, -98, dr, 0, 7); cx.fill();
   C('#f2e6c8'); cx.beginPath(); cx.arc(-12, -98, dr - 3, 0, 7); cx.fill();
   if (pulse > 0) { cx.strokeStyle = 'rgba(255,220,140,' + pulse * 0.8 + ')'; cx.lineWidth = 3; cx.beginPath(); cx.arc(-12, -98, dr + (1 - pulse) * 26, 0, 7); cx.stroke(); }
+  if (!N) {
   // Coque en coupe
   cx.beginPath(); cx.moveTo(-150, -40); cx.lineTo(160, -40); cx.lineTo(132, 30); cx.lineTo(-124, 30); cx.quadraticCurveTo(-150, 12, -150, -40); cx.closePath();
   C(sh.hurt > 0.5 ? '#a0503a' : '#6a4630'); cx.fill(); cx.strokeStyle = '#2a1a11'; cx.lineWidth = 3; cx.stroke();
   C('#2b1e17'); cx.fillRect(-132, -32, 262, 26); cx.fillRect(-120, -2, 236, 24);
   C('#8a6a4c'); cx.fillRect(-150, -42, 310, 4); cx.fillRect(-134, -6, 266, 4);
+  }
   // Pont des canons
   for (let i = 0; i < 2; i++) {
+    if (N) { if (sh.recoil[i] > 0.5) { C('rgba(255,200,90,' + sh.recoil[i] + ')'); cx.beginPath(); cx.arc(92 + i * 46, -20, 10 * sh.recoil[i], 0, 7); cx.fill(); } continue; }
     const bx = 62 + i * 46 - sh.recoil[i] * 8;
     C('#4a4d55'); rr(bx - 26, -26, 40, 12, 4); cx.fill();
     C('#2f3138'); cx.fillRect(bx + 10, -24, 14, 8);
     if (sh.recoil[i] > 0.5) { C('rgba(255,200,90,' + sh.recoil[i] + ')'); cx.beginPath(); cx.arc(bx + 30, -20, 10 * sh.recoil[i], 0, 7); cx.fill(); }
   }
   // Salle des machines : la chaudière bat avec le tempo et chauffe avec le combo
+  if (!N) {
   const glow = 0.35 + (G ? G.heat : 0) * 0.45 + pulse * 0.2;
   C('#3a2a22'); rr(-100, 0, 50, 20, 5); cx.fill();
   C('rgba(255,150,60,' + glow + ')'); cx.beginPath(); cx.arc(-75, 10, 7 + pulse * 2, 0, 7); cx.fill();
   // Proue : figure de proue
   C('#c9a14a'); cx.beginPath(); cx.moveTo(160, -40); cx.lineTo(178, -52); cx.lineTo(170, -36); cx.closePath(); cx.fill();
+  }
   // Matelots fixes (un par poste) puis l'équipage mobile
   const active = listening && G && G.resp ? ORDER_ZONE[G.resp.cmd] : null;
-  for (const [fx2, fy, zn] of FIXED) mate(fx2, fy, active === zn ? pulse : 0, '#f0d9a8');
+  FIXED.forEach(([fx2, fy, zn], i) => mate(fx2, fy, active === zn ? pulse : 0, '#f0d9a8', false, false, i + 1));
   const crew = G ? G.crew : newCrew();
-  for (const r of crew) { const run = r.x !== r.tx || r.y !== r.ty; mate(r.x, r.y, !run && active === r.zone ? pulse : 0, null, run, r.panic > 0.9); }
+  crew.forEach((r, i) => { const run = r.x !== r.tx || r.y !== r.ty; mate(r.x, r.y, !run && active === r.zone ? pulse : 0, null, run, r.panic > 0.9, i + 5, r.tx < r.x ? -1 : 1); });
   // Roue à aubes
+  if (!N) {
   cx.save(); cx.translate(-6, 26); cx.rotate(sh.wheel);
   cx.strokeStyle = '#3b2a1e'; cx.lineWidth = 4; cx.beginPath(); cx.arc(0, 0, 26, 0, 7); cx.stroke();
   for (let i = 0; i < 8; i++) { cx.rotate(Math.PI / 4); C('#5c4230'); cx.fillRect(-3, 14, 6, 16); }
   cx.restore();
+  }
   // Bouclier quand Protéger est actif
   if (guard) { cx.strokeStyle = 'rgba(120,220,255,.85)'; cx.lineWidth = 5; cx.beginPath(); cx.arc(40, -20, 150, -1.0, 1.0); cx.stroke(); C('rgba(120,220,255,.12)'); cx.beginPath(); cx.arc(40, -20, 150, -1.0, 1.0); cx.lineTo(40, -20); cx.fill(); }
   cx.restore();
 }
 function drawMonster(e) {
   if (e.fade <= 0) return;
+  const M = ART.monstres[e.type];
+  if (M) { // Image de la DA : se dresse avant d'attaquer, tremble quand touchée, coule en mourant
+    const hh = (M.hauteur || 120) * e.size, ww = hh * M.img.width / M.img.height, x = e.x + (Math.random() - 0.5) * 8 * e.shake;
+    cx.save(); cx.globalAlpha = e.fade; cx.translate(x, SEA + 20 + (1 - e.fade) * 80); cx.rotate(e.raise * 0.12);
+    if (M.regard === 'droite') cx.scale(-1, 1);
+    cx.drawImage(M.img, -ww / 2, -hh, ww, hh);
+    if (M.regard === 'droite') cx.scale(-1, 1);
+    if (e.tele) { C('rgba(255,90,58,.28)'); cx.beginPath(); cx.arc(-ww * 0.3, -hh * 0.8, 22, 0, 7); cx.fill(); }
+    for (let i = 0; i < e.max; i++) { C(i < e.hp ? '#ffd447' : 'rgba(0,0,0,.4)'); cx.beginPath(); cx.arc(-(e.max - 1) * 5 + i * 10, -hh - 10, 3.5, 0, 7); cx.fill(); }
+    cx.restore(); return;
+  }
   const z = e.size, x = e.x + (Math.random() - 0.5) * 8 * e.shake, sink = (1 - e.fade) * 80;
   cx.save(); cx.globalAlpha = e.fade; cx.translate(x, SEA + 8 + sink);
   const metal = e.color, dark = '#2c3a40';
@@ -99,6 +126,10 @@ function frame() {
   const shx = G ? (Math.random() - 0.5) * 6 * G.shake : 0;
   cx.setTransform(dpr * S, 0, 0, dpr * S, 0, 0);
   // Ciel de crépuscule, plus chaud quand le rythme tient
+  if (ART.fond) { // Image de la DA : fond de mer (couvre l'écran, léger décalage avec la caméra)
+    const F = ART.fond.img, s = Math.max((VW + 60) / F.width, 400 / F.height), fw = F.width * s;
+    cx.drawImage(F, -((cam * 0.05) % 60) - 30, 0, fw, F.height * s);
+  } else {
   const sky = cx.createLinearGradient(0, 0, 0, SEA);
   sky.addColorStop(0, mix('#1b2a3d', '#2c3550', heat)); sky.addColorStop(1, mix('#8f6a5a', '#e0955a', heat));
   C(sky); cx.fillRect(0, 0, VW, 400);
@@ -106,6 +137,7 @@ function frame() {
   for (let i = 0; i < 6; i++) { const x = ((i * 260 - cam * 0.15 + tAmb * 4) % (VW + 300) + VW + 300) % (VW + 300) - 150; C('rgba(40,44,60,.45)'); cx.beginPath(); cx.ellipse(x, 60 + (i % 3) * 40, 120, 18, 0, 0, 7); cx.fill(); }
   // Mer lointaine
   C('#24425a'); cx.fillRect(0, SEA - 4, VW, 400);
+  }
   cx.save(); cx.translate(-cam + shx, 0);
   // Fort ennemi au bout de la mer
   const fx = LEVEL.portX, lit = G ? G.totemLit : 0;
