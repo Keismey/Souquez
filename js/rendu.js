@@ -87,7 +87,15 @@ function drawOffscreenFoes(cam, VW) {
   let n = 0;
   for (const e of G.mons) {
     if (e.hp <= 0 || e.fade < 1 || e.x - G.ship.x > e.reach || e.x - 60 * e.size - cam < VW) continue; // badge masqué dès que le monstre entre dans le cadre
-    const y = SEA - 62 - n++ * 54, x = VW - 44, tele = e.tele ? 1 : 0;
+    let y = SEA - 62 - n++ * 54; const x = VW - 44, tele = e.tele ? 1 : 0;
+    // Si un monstre visible est sous le badge, le badge passe au-dessus de sa tête
+    for (const o of G.mons) {
+      if (o === e || o.fade <= 0) continue;
+      const sx = o.x - cam, half = 60 * o.size;
+      if (sx + half < x - 34 || sx - half > x + 34) continue;
+      const M2 = ART.monstres[o.type], top = M2 ? SEA + 20 - (M2.hauteur || 120) * o.size - 14 : SEA + 8 - 100 * o.size;
+      y = Math.min(y, top - 34);
+    }
     const r = 18 + tele * (4 + Math.sin(tAmb * 14) * 3);
     cx.save(); cx.translate(x, y);
     if (tele) { C('rgba(255,90,58,' + (0.35 + Math.sin(tAmb * 14) * 0.2) + ')'); cx.beginPath(); cx.arc(0, 0, r + 10, 0, 7); cx.fill(); }
