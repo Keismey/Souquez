@@ -15,6 +15,9 @@ Tenue par le fil QA. Le directeur signale les bugs dans le fil Directeur, qui le
 | 6 | ⚪ | 0.8.2 | Écran de 360 px de haut : le bouton « Écran titre » de la victoire sort de l'écran (atteignable en faisant défiler). | Programmation | vérifié (0.8.3) |
 | 7 | 🟠 | 0.9.0 | Après une scène ou une pause, le jeu repart en 0,6 s sans décompte ; une reprise en retard coûte la pénalité « rythme cassé » (−2 crans en sortant de la scène « attaque »). Contredit « pause gratuite ». | Programmation | vérifié (0.9.1) |
 | 8 | ⚪ | 0.9.0 | Nouveau joueur : l'intro s'affiche par-dessus l'écran « Calibrage 12/12 ». | Programmation | vérifié (0.9.1) |
+| 9 | 🟠 | 0.10.1 | Les Crache-Boulons attaquent depuis hors de l'écran (antérieur aux images). | Programmation | ouvert |
+| 10 | ⚪ | 0.10.0 | Le fond saute de 60 unités 2 fois par mission. | Programmation | ouvert |
+| 11 | ⚪ | 0.10.0 | La pose d'alerte des matelots n'est presque jamais visible. | Programmation / DA | ouvert |
 
 ## Versions validées
 
