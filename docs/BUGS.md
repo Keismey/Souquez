@@ -18,7 +18,7 @@ Tenue par le fil QA. Le directeur signale les bugs dans le fil Directeur, qui le
 | 9 | 🟠 | 0.10.1 | Les Crache-Boulons attaquent depuis hors de l'écran (antérieur aux images). | Programmation | vérifié (0.10.2) |
 | 10 | ⚪ | 0.10.0 | Le fond saute de 60 unités 2 fois par mission. | Programmation | vérifié (0.10.2) |
 | 11 | ⚪ | 0.10.0 | La pose d'alerte des matelots n'est presque jamais visible. | Programmation / DA | vérifié (0.10.2) |
-| 12 | ⚪ | 0.10.3 | En 863×360, le badge du 2e Crache-Boulons (hors écran) chevauche le 1er, en partie visible. Détail visuel, comportement correct (badge masqué pour un monstre visible depuis 0.10.3). | Programmation | ouvert |
+| 12 | ⚪ | 0.10.3 | En 863×360, le badge du 2e Crache-Boulons (hors écran) chevauche le 1er, en partie visible. Détail visuel, comportement correct (badge masqué pour un monstre visible depuis 0.10.3). | Programmation | vérifié (0.10.4) |
 
 ## Versions validées
 
