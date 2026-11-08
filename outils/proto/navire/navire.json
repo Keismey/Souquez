@@ -1,0 +1,20 @@
+{
+ "nom": "Grondeuse (FACTICE pour tester le moteur)",
+ "coque": { "img": "grondeuse_coupe.png", "largeur": 1000 },
+ "ponts": {
+  "pont":     { "sol": 330, "haut": 79,  "x0": 200,  "x1": 1000, "postes": [380, 560, 900] },
+  "proue":    { "sol": 330, "haut": 79,  "x0": 1050, "x1": 1900, "postes": [1250, 1500, 1750] },
+  "canons":   { "sol": 611, "haut": 360, "x0": 800,  "x1": 1900, "postes": [1000, 1430, 1680] },
+  "machines": { "sol": 892, "haut": 641, "x0": 250,  "x1": 1350, "postes": [590, 940, 1150] }
+ },
+ "echelle": { "x": 705 },
+ "pieces": {
+  "canon1": { "img": "canon.png", "pivot": [70, 60], "ancre": [1500, 545], "anim": "recul", "course": 40 },
+  "canon2": { "img": "canon.png", "pivot": [70, 60], "ancre": [1750, 545], "anim": "recul", "course": 40 },
+  "roue":   { "img": "roue.png", "pivot": [160, 160], "ancre": [300, 905], "anim": "rotation" },
+  "bielle": { "img": "bielle.png", "pivot": [40, 40], "ancre": [1000, 830], "anim": "vaetvient", "axe": [1, 0], "course": 40 },
+  "trou":   { "img": "degat_trou.png", "pivot": [70, 60], "ancre": [1250, 760], "anim": "degat", "seuil": 0.75 },
+  "rustine":{ "img": "degat_rustine.png", "pivot": [65, 55], "ancre": [500, 470], "anim": "degat", "seuil": 0.5 },
+  "plaque": { "img": "degat_plaque.png", "pivot": [75, 60], "ancre": [1600, 850], "anim": "degat", "seuil": 0.25 }
+ }
+}
