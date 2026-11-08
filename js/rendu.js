@@ -86,7 +86,7 @@ function drawShip(sh, guard, pulse, listening) {
 function drawOffscreenFoes(cam, VW) {
   let n = 0;
   for (const e of G.mons) {
-    if (e.hp <= 0 || e.fade < 1 || e.x - G.ship.x > e.reach || e.x - cam < VW - 12) continue;
+    if (e.hp <= 0 || e.fade < 1 || e.x - G.ship.x > e.reach || e.x - 60 * e.size - cam < VW) continue; // badge masqué dès que le monstre entre dans le cadre
     const y = SEA - 62 - n++ * 54, x = VW - 44, tele = e.tele ? 1 : 0;
     const r = 18 + tele * (4 + Math.sin(tAmb * 14) * 3);
     cx.save(); cx.translate(x, y);
