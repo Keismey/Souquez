@@ -33,6 +33,13 @@
       for (const sh of G.shots) if (sh.spit && sh.mon && !sh._vu && sh.x0 > G.ship.x + 200) { sh._vu = true; e._jet = now(); }
       const kj = e._jet == null ? 1 : (now() - e._jet) / (1.5 * SPB); etat.jet = kj < 1 ? kj : 0;
       if (etat.double && e.tele) etat.prepare = 1; // entre les 2 coups de la double pince, la 2e reste levée
+      // Double pince à 2 temps (DA) : la 1re reste baissée, la 2e s'arme (arme2) puis frappe (attaque2)
+      const c = e._atk == null ? 99 : (now() - e._atk) / SPB;
+      if (etat.double && c < BOSS.ecart + 1) {
+        etat.prepare = 1; etat.attaque = Math.min(1, c);
+        const c2 = e._atk2 != null && e._atk2 >= e._atk ? (now() - e._atk2) / SPB : -1;
+        etat.arme2 = c2 >= 0 ? 1 : Math.max(0, Math.min(1, c - (BOSS.ecart - 1))); etat.attaque2 = c2 >= 0 && c2 < 1 ? c2 : 0;
+      }
     }
     MONSTRES.draw(cx, nom, e.x, SEA + 8, h, tAmb, -1, e.x * 0.01, etat);
     // Points de vie au-dessus de la tête (comme dans le jeu)
