@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc d'essai navire</title>
+<style>
+:root { --bg: #13302b; --panel: #1c3f39; --txt: #f2e6cc; --muted: #a9bdb4; --acc: #e0a82e; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 15px/1.4 system-ui, sans-serif; }
+header { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+h1 { font-size: 18px; margin: 0 10px 0 0; }
+button { background: #2f5a52; color: var(--txt); border: 0; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
+button.on { background: var(--acc); color: #1f2a44; }
+label { display: flex; gap: 6px; align-items: center; }
+#cv { display: block; width: calc(100% - 32px); margin: 0 16px; aspect-ratio: 16 / 9; border-radius: 10px; background: #7fa89a; cursor: crosshair; }
+#info { color: var(--muted); font-size: 13px; padding: 6px 16px; margin: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Banc d'essai navire</h1>
+  <button id="zones" class="on">Zones et ancres</button>
+  <button id="crew" class="on">Équipage</button>
+  <button id="pan">Panique</button>
+  <label>Coque <input type="range" id="hp" min="0" max="100" value="100"></label>
+</header>
+<canvas id="cv" width="1280" height="720"></canvas>
+<p id="info">Écran de référence 1280 × 720. Touche l'image : coordonnées dans l'image brute de la coque (pour régler navire.json).</p>
+<script src="navire.js"></script>
+<script src="proto/equipage.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id), cv = $('cv'), g = cv.getContext('2d');
+const SRC = new URLSearchParams(location.search).get('n') || 'proto/navire/navire.json';
+const BEAT = 60 / 102;
+let N = null, zones = true, crew = true, pan = false;
+for (const [id, set] of [['zones', () => zones = !zones], ['crew', () => crew = !crew], ['pan', () => pan = !pan]]) $(id).onclick = () => { set(); $(id).classList.toggle('on'); };
+// Qui se tient à chaque poste (correspondance poste → personnage proposée par la Programmation)
+const EQUIPE = { pont: ['hortense', 'matelot'], proue: ['matelot'], canons: ['pepin', 'matelot'], machines: ['gaston', 'bouillon'] };
+const TAILLE = { pepin: 60, matelot: 90, hortense: 110, gaston: 95, bouillon: 100 };
+const X0 = 230, Y0 = 230; // place du navire à l'écran (coin de l'image brute)
+
+function frame(ts) {
+  const t = ts / 1000, b = t / BEAT, f = b - Math.floor(b);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = '#f2e6cc'; g.fillRect(0, 0, 1280, 470); g.fillStyle = '#7fa89a'; g.fillRect(0, 470, 1280, 250);
+  if (!N) { requestAnimationFrame(frame); return; }
+  const s = 1, k = N.k * s, hp = $('hp').value / 100;
+  // Canons : recul sur chaque temps (un canon sur deux) ; roue et bielle au tempo
+  const kick = (on) => on ? Math.exp(-f * 6) : 0, beat = Math.floor(b);
+  NAVIRE.draw(g, N, X0, Y0 + Math.sin(t * 1.6) * 3, s, { recul: { canon1: kick(beat % 2 === 0), canon2: kick(beat % 2 === 1) }, roue: t * 1.2, piston: b * Math.PI, coque: hp });
+  g.fillStyle = 'rgba(28,62,86,.85)'; g.fillRect(0, 640, 1280, 80); // mer devant
+  if (crew && typeof EQUIPAGE !== 'undefined') for (const [zone, noms] of Object.entries(EQUIPE)) {
+    const P = NAVIRE.postes(N, zone, X0, Y0 + Math.sin(t * 1.6) * 3, s);
+    noms.forEach((nom, i) => { const p = P.pts[i % P.pts.length]; if (!p) return;
+      const etat = pan ? 'panique' : (EQUIPAGE.poste && EQUIPAGE.poste[nom]) || 'tambour';
+      EQUIPAGE.draw(g, nom, p[0], p[1], TAILLE[nom] * P.haut / 130, etat, t, 1, i); }); // tailles de la charte pour des ponts de 130 px, à l'échelle
+  }
+  if (zones) {
+    g.lineWidth = 2; g.font = 'bold 14px system-ui';
+    for (const [zone, Z] of Object.entries(N.data.ponts)) {
+      const [ax, ay] = NAVIRE.toScreen(N, X0, Y0, s, [Z.x0, Z.haut]), [bx, by] = NAVIRE.toScreen(N, X0, Y0, s, [Z.x1, Z.sol]);
+      g.strokeStyle = '#e0a82e'; g.setLineDash([8, 6]); g.strokeRect(ax, ay, bx - ax, by - ay); g.setLineDash([]);
+      g.fillStyle = '#b5452f'; g.fillText(zone + ' · ' + Math.round(by - ay) + ' px', ax + 4, ay + 16);
+      for (const px of Z.postes || []) { const [x, y] = NAVIRE.toScreen(N, X0, Y0, s, [px, Z.sol]); g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); }
+    }
+    g.fillStyle = '#1f2a44';
+    for (const P of Object.values(N.pieces)) { const [x, y] = NAVIRE.toScreen(N, X0, Y0, s, P.ancre); g.beginPath(); g.moveTo(x - 7, y); g.lineTo(x + 7, y); g.moveTo(x, y - 7); g.lineTo(x, y + 7); g.strokeStyle = '#1f2a44'; g.stroke(); }
+  }
+  requestAnimationFrame(frame);
+}
+cv.addEventListener('pointerdown', (e) => {
+  if (!N) return; const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * 1280 / r.width, y = (e.clientY - r.top) * 720 / r.height;
+  $('info').textContent = 'Image brute de la coque : x = ' + Math.round((x - X0) / N.k) + ', y = ' + Math.round((y - Y0) / N.k);
+});
+NAVIRE.load(SRC).then((n) => { N = n; if (!n) $('info').textContent = 'Navire introuvable : ' + SRC; });
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

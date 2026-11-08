@@ -13,11 +13,17 @@ function rr(x, y, w, h, r) { cx.beginPath(); cx.roundRect ? cx.roundRect(x, y, w
 // les ponts provisoires font 28 unités, et les mains montent à 1,1·h en panique, donc h = 24 (≈ 40 px sur 720).
 // À agrandir (charte : 60 px) quand le navire définitif aura des ponts plus hauts.
 const PEPIN_H = 24;
-function pepin(x, y, run, alarm, dir, seed) {
+// Pendant la réponse de l'équipage, un matelot à son poste tape le rythme sur l'objet de son poste.
+// État « tambour-<objet> » s'il existe dans js/equipage.js (livré par la DA), sinon « tambour » (petit tambour).
+const TAP_OBJ = { machines: 'marmite', canons: 'coque', pont: 'tambour', proue: 'coque' };
+function tapState(zone) { const s = 'tambour-' + TAP_OBJ[zone]; return EQUIPAGE.etats && EQUIPAGE.etats.includes(s) ? s : 'tambour'; }
+function pepin(x, y, run, alarm, dir, seed, tap) {
   cx.save(); cx.translate(x, y);
   const s = Math.hypot(cx.getTransform().c, cx.getTransform().d) / dpr; // unités → pixels CSS (contrat : h en pixels)
   cx.scale(1 / s, 1 / s);
-  EQUIPAGE.draw(cx, 'pepin', 0, 0, PEPIN_H * s, alarm ? 'panique' : run ? 'course' : 'repos', tAmb, dir || 1, seed || 0);
+  // En frappe, le temps est celui de la musique (0 = un temps), pour que chaque coup tombe pile sur le temps
+  const tm = tap && typeof ctx !== 'undefined' && ctx ? ctx.currentTime - G.start : tAmb;
+  EQUIPAGE.draw(cx, 'pepin', 0, 0, PEPIN_H * s, alarm ? 'panique' : run ? 'course' : tap || 'repos', tm, dir || 1, seed || 0);
   cx.restore();
 }
 function mate(x, y, bob, tint, run, alarm, idx, dir) {
@@ -80,7 +86,8 @@ function drawShip(sh, guard, pulse, listening) {
   const active = listening && G && G.resp ? ORDER_ZONE[G.resp.cmd] : null;
   FIXED.forEach(([fx2, fy, zn], i) => mate(fx2, fy, active === zn ? pulse : 0, '#f0d9a8', false, false, i + 1));
   const crew = G ? G.crew : newCrew();
-  crew.forEach((r, i) => { if (i === 0 && typeof EQUIPAGE !== 'undefined') { pepin(r.x, r.y, r.x !== r.tx || r.y !== r.ty, r.panic > 0.9, r.tx < r.x ? -1 : 1, 0); return; } const run = r.x !== r.tx || r.y !== r.ty; mate(r.x, r.y, !run && active === r.zone ? pulse : 0, null, run, r.panic > 0.9, i + 5, r.tx < r.x ? -1 : 1); });
+  crew.forEach((r, i) => { if (i === 0 && typeof EQUIPAGE !== 'undefined') { const run = r.x !== r.tx || r.y !== r.ty, tap = G && G.mode === 'play' && !run && r.zone && inResp(G.curBeat) ? tapState(r.zone) : null;
+    pepin(r.x, r.y, run, r.panic > 0.9, r.tx < r.x ? -1 : 1, 0, tap); return; } const run = r.x !== r.tx || r.y !== r.ty; mate(r.x, r.y, !run && active === r.zone ? pulse : 0, null, run, r.panic > 0.9, i + 5, r.tx < r.x ? -1 : 1); });
   // Roue à aubes
   if (!N) {
   cx.save(); cx.translate(-6, 26); cx.rotate(sh.wheel);
