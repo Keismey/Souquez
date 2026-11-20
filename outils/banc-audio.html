@@ -45,10 +45,14 @@ footer { padding: 24px 16px; color: var(--muted); font-size: 12px; }
   <div class="carte"><b>Étoile gagnée</b><p>Un cran plus haut à chaque étoile.</p><div class="ligne"><button data-e="1">★</button><button data-e="2">★★</button><button data-e="3">★★★</button><button id="trois">Écran de fin 3 étoiles</button></div></div>
 </div>
 
+<h2>Monstres de la mer 1</h2>
+<p class="note">Un bouton par moment du combat : annonce (le télégraphe), attaque, touché, coulé. « Scène » enchaîne l'annonce et le coup au tempo du combat, avec le tic du tempo.</p>
+<div class="grid" id="monstres"></div>
+
 <h2>Repères (sons déjà dans le jeu)</h2>
 <div class="grid"><div class="carte"><b>Pour comparer les volumes</b><div class="ligne"><button id="pads">BOUM TAK BOUM TAK</button><button id="choeur">Chœur actuel</button></div></div></div>
 
-<footer>Fichier testé : outils/proto/voix.js (fonctions parler et jingle). Il ira dans le jeu après ton feu vert.</footer>
+<footer>Fichiers testés : outils/proto/voix.js (parler, jingle) et outils/proto/monstres-sons.js (AUDIO_MONSTRES.jouer). Il ira dans le jeu après ton feu vert.</footer>
 
 <script>
 'use strict';
@@ -61,6 +65,7 @@ window.addEventListener('error', (e) => { document.getElementById('err').textCon
 <script src="../js/audio.js"></script>
 <script src="../js/dialogues.js"></script>
 <script src="proto/voix.js"></script>
+<script src="proto/monstres-sons.js"></script>
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
@@ -96,6 +101,32 @@ document.querySelectorAll('[data-e]').forEach((b) => b.onclick = () => jingle('e
 $('vicFoule').onclick = () => { const at = son(); const d = jingle('victoire', at); cheer(at + 0.2, true); cheer(at + 1.1, true); };
 $('trois').onclick = () => { let at = son(); at += jingle('victoire', at) + 0.15; for (let n = 1; n <= 3; n++) { jingle('etoile', at, n); at += 0.55; } };
 $('pads').onclick = () => { const at = son(), s = 60 / 102; ['BOUM', 'TAK', 'BOUM', 'TAK'].forEach((p, i) => playPad(p, at + i * s)); };
+const MONSTRES_BANC = [
+  ['sardine', 'Sardine-à-Vapeur', 'Nageuse : son hélice s’emballe, puis elle mord.', 102],
+  ['crache', 'Crache-Boulons', 'Poisson-globe à canon : il gonfle, puis tire un boulon.', 102],
+  ['cogneur', 'Bernard-l’Enclume', 'Sa pince se lève au cliquet, puis frappe l’enclume.', 102],
+  ['homard', 'Tonton Homard', 'Chaudière qui siffle, marteau-pilon à vapeur, jet de vapeur, appel des Sardines.', 106],
+  ['navire', 'La Grondeuse', 'Notre navire : coque touchée, tir de canon.', 102]
+];
+const NOMS_EVT = { annonce: 'Annonce', attaque: 'Attaque', attaque2: '2e pince', touche: 'Touché', coule: 'Coulé', jet: 'Jet de vapeur', appel: 'Appel', colere: 'Colère', coque: 'Coque touchée', canon: 'Tir' };
+for (const [type, nom, desc, bpm] of MONSTRES_BANC) {
+  const c = document.createElement('div'); c.className = 'carte';
+  c.innerHTML = `<b>${nom}</b><p>${desc}</p><div class="ligne"></div>`;
+  const l = c.querySelector('.ligne');
+  for (const evt of AUDIO_MONSTRES.liste()[type]) { const b = document.createElement('button'); b.textContent = NOMS_EVT[evt] || evt; b.onclick = () => AUDIO_MONSTRES.jouer(type, evt, son()); l.appendChild(b); }
+  if (type !== 'navire') {
+    const b = document.createElement('button'); b.textContent = 'Scène (' + bpm + ' BPM)';
+    b.onclick = () => { // tic sur 8 temps, annonce au temps 1, coup au temps 5 (+ 2e pince au temps 7 pour le homard), coque touchée
+      const at = son(), s = 60 / bpm;
+      for (let k = 0; k < 8; k++) playPad('TAK', at + k * s, 0.25, 1.4);
+      AUDIO_MONSTRES.jouer(type, 'annonce', at + s);
+      AUDIO_MONSTRES.jouer(type, 'attaque', at + 5 * s); AUDIO_MONSTRES.jouer('navire', 'coque', at + 5 * s + 0.35);
+      if (type === 'homard') { AUDIO_MONSTRES.jouer('homard', 'attaque2', at + 7 * s); AUDIO_MONSTRES.jouer('navire', 'coque', at + 7 * s + 0.35); }
+    };
+    l.appendChild(b);
+  }
+  $('monstres').appendChild(c);
+}
 $('choeur').onclick = () => { const at = son(); cheer(at, false); groan(at + 1.2); };
 </script>
 </body>
