@@ -2,7 +2,7 @@
 
 Tenue par le fil QA. Le directeur signale les bugs dans le fil Directeur, qui les transmet ; le fil QA les note ici et suit leur statut.
 
-**Gravité** : 🔴 bloquant (crash, rythme désynchronisé, sauvegarde perdue : la version ne sort pas) · 🟠 gênant · ⚪ détail
+**Gravité** : ❓ question de design · 🔴 bloquant (crash, rythme désynchronisé, sauvegarde perdue : la version ne sort pas) · 🟠 gênant · ⚪ détail
 **Statut** : ouvert · en cours · corrigé (à revérifier) · vérifié · refusé
 
 | N° | Gravité | Version | Description | Fil chargé | Statut |
@@ -24,9 +24,13 @@ Tenue par le fil QA. Le directeur signale les bugs dans le fil Directeur, qui le
 | 15 | ⚪ | 0.11.1 | La panique de Pépin suit chaque ordre, pas l'annonce d'attaque (écart avec le plan). Tranché : panique à l'annonce d'une attaque et quand la coque est touchée, pas après chaque ordre. | Programmation | vérifié (0.11.2) |
 | 16 | ⚪ | 0.11.1 | Pépin se tourne vers la droite à l'arrivée, quel que soit le sens de sa course. | Programmation | vérifié (0.11.2) |
 | 17 | ⚪ | 0.11.1 | Fluidité −12 % avec le processeur ralenti 6 fois : à confirmer sur le G85 par le directeur. | Directeur | à confirmer |
-| 18 | 🟠 | carte mer 1 (3141c21) | Objectifs des missions tous « Atteindre la bouée » ; le Game design prévoit phare (m2), épave (m3), port (m4). | Programmation | ouvert |
-| 19 | ⚪ | carte mer 1 (3141c21) | Fiche du boss : il manque « + une pièce de navire rare la première fois ». | Programmation | ouvert |
-| 20 | ⚪ | carte mer 1 (3141c21) | Accessibilité : Tab sort de la fiche ouverte (aria-modal sans piège de focus). | Programmation | ouvert |
+| 18 | 🟠 | carte mer 1 (3141c21) | Objectifs des missions tous « Atteindre la bouée » ; le Game design prévoit phare (m2), épave (m3), port (m4). | Programmation | corrigé (02b3bed, code relu) : à revérifier |
+| 19 | ⚪ | carte mer 1 (3141c21) | Fiche du boss : il manque « + une pièce de navire rare la première fois ». | Programmation | corrigé (02b3bed, code relu) : à revérifier |
+| 20 | ⚪ | carte mer 1 (3141c21) | Accessibilité : Tab sort de la fiche ouverte (aria-modal sans piège de focus). | Programmation | corrigé (02b3bed, code relu) : à revérifier |
+| 21 | ⚪ | banc navire v3 (27440fa) | Matelots de 48 px en panique : les mains touchent la poutre du pont des canons (−0,8 px, aucune marge). | Programmation | corrigé (f8c20b0, matelots à 46 px) : à revérifier |
+| 22 | 🟠 | banc navire v3 (27440fa) | Les deux matelots des canons sont cachés derrière les canons (postes 845 et 1070, canons à 880 et 1100). | Programmation / DA | corrigé (f8c20b0, postes à côté des sabords) : à revérifier |
+| 23 | ⚪ | banc navire v3 (27440fa) | La plaque de réparation de la coque (ancre 800, 580) est à moitié sous la mer. | DA | ouvert |
+| 24 | ❓ | carte mer 1 | Question Game design : une mission se débloque à 1 étoile ; coque cédée = 0 étoile, donc rien ne se débloque même si le joueur est arrivé au bout. Voulu ? | Game design | ouvert |
 
 ## Versions validées
 
