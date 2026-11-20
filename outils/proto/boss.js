@@ -1,14 +1,15 @@
 // Souquez ! : prototype du combat contre Tonton Homard (Léviathan de la mer 1), formes simples.
 // Chargé par outils/boss.html après les scripts du jeu. Détail du Game design (GDD, « Mer 1 en détail ») :
 //   106 BPM, 40 PV, combat sur place, référence 1:45.
-//   Phase 1 (40 → 25) : pince-marteau, 6 dégâts tous les 24 temps, annoncée 10 temps avant.
+//   Phase 1 (40 → 25) : pince-marteau, 6 dégâts tous les 24 temps, annoncée 10 temps avant ; 1er coup au temps 28.
+//   Sardines appelées : à ~280 devant le navire, stats habituelles (1re attaque 10 temps après l'apparition). Jet de vapeur : phase 2 seulement.
 //   Phase 2 (25 → 12) : la pince continue ; 2 Sardines-à-Vapeur appelées une fois, devant lui (elles le protègent) ;
 //                        jet de vapeur 1 dégât tous les 12 temps, non annoncé.
-//   Phase 3 (12 → 0)  : double pince, 2 coups de 5 à 4 temps d'écart, tous les 24 temps, annoncée 10 temps avant
+//   Phase 3 (12 → 0)  : double pince, 2 coups de 5 à 2 temps d’écart, tous les 24 temps, annoncée 10 temps avant
 //                        (un seul Protéger bien placé couvre les deux).
 //   Coque cédée : le combat se relance tout de suite. Fin : le homard lâche la plaque gravée.
 'use strict';
-const BOSS = { tele: 10, every: 24, pince: 6, double: 5, ecart: 4, jet: 1, jetEvery: 12, premier: 14, zoom: 0.84 };
+const BOSS = { tele: 10, every: 24, pince: 6, double: 5, ecart: 2, jet: 1, jetEvery: 12, premier: 28, zoom: 0.84 };
 MONSTERS.homard = { hp: 40, dmg: BOSS.pince, every: BOSS.every, reach: -1e9 /* attaques gérées ici */, size: 1.5, color: '#b5452f', shotDur: 0.5, boss: true };
 LEVEL.portX = -2000; // combat sur place : pas de port à atteindre (ni de fort à l'horizon), il faut vaincre le homard
 LEVEL.monsters = [{ type: 'homard', x: 500 }];
@@ -28,21 +29,22 @@ function pince(h, dmg) {
   playPad('BOUM', ctx.currentTime, 0.7, 0.5); h.shake = 0.6;
 }
 function bossBeat(k) {
-  if (!G || G.mode !== 'play' || G.won || k < G.playFrom) return;
+  if (!G || G.mode !== 'play' || G.won) return; // tourne aussi pendant le décompte de reprise (comme les autres monstres)
   const h = homard(); if (!h || h.hp <= 0) return;
   B.phase = h.hp > 25 ? 1 : h.hp > 12 ? 2 : 3;
   // Phase 2 : appelle 2 Sardines-à-Vapeur devant lui (une seule fois) ; placées en tête de liste, elles prennent les tirs
   if (B.phase >= 2 && !B.appel) {
     B.appel = true; banner('Tonton Homard appelle ses petits !');
     const T = MONSTERS.sardine;
-    for (const x of [h.x - 150, h.x - 100]) G.mons.unshift({ ...T, type: 'sardine', x, max: T.hp, shake: 0, fade: 1, nextAtk: k + 6, tele: 0, raise: 0 });
+    // à environ 280 devant le navire (à portée, elles attaquent vraiment) ; 1re attaque 10 temps après l'apparition
+    for (const x of [G.ship.x + 265, G.ship.x + 295]) G.mons.unshift({ ...T, type: 'sardine', x, max: T.hp, shake: 0, fade: 1, nextAtk: k + FIRST, tele: 0, raise: 0 });
     B.jet = k + 6;
   }
   // Pince (et double pince en phase 3), annoncée 10 temps avant
-  if (B.next == null) B.next = k + BOSS.premier;
-  if (k === B.next - BOSS.tele) { h.tele = 1; B.dbl = B.phase === 3; crewPanic(); hint(t('incoming')); G.hintHold = k + 3; }
-  if (k === B.next) { pince(h, B.dbl ? BOSS.double : BOSS.pince); if (B.dbl) B.second = k + BOSS.ecart; else h.tele = 0; B.next = k + BOSS.every; }
-  if (k === B.second) { pince(h, BOSS.double); B.second = null; h.tele = 0; }
+  if (B.next == null) B.next = Math.max(BOSS.premier, k + BOSS.tele); // 1er coup au temps 28 (annoncé au 18), le joueur s'installe
+  if (!h.tele && B.second == null && k >= B.next - BOSS.tele && k < B.next) { h.tele = 1; B.dbl = B.phase === 3; crewPanic(); hint(t('incoming')); G.hintHold = k + 3; }
+  if (k >= B.next) { pince(h, B.dbl ? BOSS.double : BOSS.pince); if (B.dbl) B.second = k + BOSS.ecart; else h.tele = 0; B.next = k + BOSS.every; }
+  if (B.second != null && k >= B.second) { pince(h, BOSS.double); B.second = null; h.tele = 0; }
   // Jet de vapeur, non annoncé (phase 2)
   if (B.phase === 2 && B.jet != null && k >= B.jet) {
     G.shots.push({ mon: true, spit: true, x0: h.x - 40 * h.size, y0: SEA - 60 * h.size, x1: G.ship.x + 60, y1: SEA - 30, t: 0, dur: 0.5, dmg: BOSS.jet });
