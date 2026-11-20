@@ -30,7 +30,7 @@ Tenue par le fil QA. Le directeur signale les bugs dans le fil Directeur, qui le
 | 21 | ⚪ | banc navire v3 (27440fa) | Matelots de 48 px en panique : les mains touchent la poutre du pont des canons (−0,8 px, aucune marge). | Programmation | corrigé (f8c20b0, matelots à 46 px) : à revérifier |
 | 22 | 🟠 | banc navire v3 (27440fa) | Les deux matelots des canons sont cachés derrière les canons (postes 845 et 1070, canons à 880 et 1100). | Programmation / DA | corrigé (f8c20b0, postes à côté des sabords) : à revérifier |
 | 23 | ⚪ | banc navire v3 (27440fa) | La plaque de réparation de la coque (ancre 800, 580) est à moitié sous la mer. | DA | ouvert |
-| 24 | ❓ | carte mer 1 | Question Game design : une mission se débloque à 1 étoile ; coque cédée = 0 étoile, donc rien ne se débloque même si le joueur est arrivé au bout. Voulu ? | Game design | ouvert |
+| 24 | ❓ | carte mer 1 | Déblocage après une coque cédée. Tranché par le Game design : atteindre le port débloque toujours la mission suivante ; coque cédée en route puis port = 1 ★ (ni coque ni temps), butin ×1 ; seul un abandon avant le port ne débloque rien ; boss inchangé (coque cédée = combat relancé). | Programmation | en cours |
 
 ## Versions validées
 

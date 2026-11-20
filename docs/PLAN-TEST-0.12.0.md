@@ -19,7 +19,7 @@ Noter ✅ / ❌ / ⚠️, capture pour chaque ❌, sévérité proposée (🔴 �
 ## C. Missions 1 à 4
 9. Chaque mission se joue jusqu'au bout ; seuls les ordres appris jusque-là sont reconnus (Soigner dès m2, Protéger dès m3).
 10. Écran de fin : étoiles, butin × 1 / × 1 / × 1,5 / × 2 selon 0 à 3 étoiles, ordre appris, « Retour à la carte ».
-11. Coque cédée : 0 étoile, butin gardé à × 1, « Rejouer » en premier et sélectionné. Noter si la mission suivante se débloque (question n° 24).
+11. Coque cédée en route puis arrivée au port : **1 étoile** (ni coque ni temps), butin × 1, mission suivante **ouverte**, meilleur temps et meilleure coque **non enregistrés** (bug 24). Abandon avant le port : rien ne se débloque. Boss : coque cédée = le combat se relance.
 12. Le déblocage suit les étoiles : 1 étoile ouvre la mission suivante, 4 missions faites ouvrent le boss.
 
 ## D. Boss : Tonton Homard
