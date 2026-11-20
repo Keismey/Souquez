@@ -43,12 +43,17 @@ Noter ✅ / ❌ / ⚠️, capture pour chaque ❌, sévérité proposée (🔴 �
 
 ---
 
-## Séance G85 du directeur (10 minutes)
-À faire en une fois, son allumé, vibrations activées, appli installée.
+## Séance G85 du directeur (15 minutes)
+À faire en une fois, son allumé, vibrations activées, appli installée. Étapes 1 à 6 dans le jeu, étape 7 sur le banc d'écoute.
 1. **(1 min)** Ouvre l'appli : tes réglages et ta latence sont toujours là.
 2. **(3 min)** Joue la mission 1 en entier. Le tambour tombe-t-il pile avec la musique et avec les frappes de l'équipage ? Ça vibre à chaque frappe ?
 3. **(1 min)** Pendant une attaque, avec plusieurs monstres et tout l'équipage qui panique : ça reste fluide, sans saccade ?
 4. **(1 min)** Appuie sur pause, puis reprends : le décompte est-il clair à l'oreille ?
 5. **(3 min)** Lance le boss (débloqué pour le test si besoin) : à 106 BPM, tes frappes sont-elles toujours « Parfait » ou « Bien » sans recalibrer ?
 6. **(1 min)** Le son global : la musique, les voix et les bruitages s'entendent-ils bien tous les trois ?
+7. **(5 min)** Ouvre https://keismey.github.io/Souquez/outils/banc-audio.html sur le G85 et écoute :
+   - les voix des 4 personnages et du Vieux : chacune se reconnaît-elle, aucune n'est désagréable ?
+   - les jingles victoire, défaite et étoile : courts, clairs, bien différents ?
+   - les sons des monstres de la mer 1 : on devine quel monstre fait quoi, et rien ne couvre le tambour ?
+
 Réponds simplement « ok » ou décris ce qui cloche, point par point.
